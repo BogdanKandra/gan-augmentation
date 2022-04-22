@@ -1,4 +1,5 @@
 import logging
+from math import sqrt
 import sys
 from scripts import config
 
@@ -10,3 +11,10 @@ def get_logger(name: str) -> logging.Logger:
     logger.setLevel(config.LOG_LEVEL)
 
     return logger
+
+def is_perfect_square(number: int) -> bool:
+    """ Checks whether the given number is a perfect square """
+    if type(number) is not int:
+        raise TypeError('Unexpected type for parameter "number" (Expected <int>, given <{}>)'.format(type(number)))
+
+    return int(sqrt(number)) ** 2 == number
