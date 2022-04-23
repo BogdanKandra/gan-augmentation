@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from math import sqrt
-import scripts.utils as utils
+from scripts import config, utils
 import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.datasets import fashion_mnist
@@ -16,12 +16,19 @@ class FashionMNISTClassifier(ABC):
         """ The base constructor loads the Fashion-MNIST dataset and stores it in instance attributes;
         it additionaly stores a model placeholder as instance attribute """
         (self.X_train, self.y_train), (self.X_test, self.y_test) = fashion_mnist.load_data()
+        validation_size = config.VALID_SET_PERCENTAGE * len(self.X_train)
+        self.X_valid = self.X_train[: validation_size]
+        self.y_valid = self.y_train[: validation_size]
+        self.X_train = self.X_train[validation_size:]
+        self.y_train = self.y_train[validation_size:]
         self.model = None
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
         LOGGER.info('>>> Train Set Shape: X_train.shape={}, y_train.shape={}'.format(self.X_train.shape,
                                                                                      self.y_train.shape))
+        LOGGER.info('>>> Validation Set Shape: X_valid.shape={}, y_valid.shape={}'.format(self.X_valid.shape,
+                                                                                          self.y_valid.shape))
         LOGGER.info('>>> Test Set Shape: X_test.shape={}, y_test.shape={}'.format(self.X_test.shape,
                                                                                   self.y_test.shape))
 
@@ -60,21 +67,21 @@ class FashionMNISTClassifier(ABC):
         """ Preprocesses the dataset currently in memory """
         pass
 
-    # @abstractmethod
-    # def build_model(self) -> None:
-    #     """ Defines the classifier model structure and stores it as an instance attribute """
-    #     pass
-    #
-    # @abstractmethod
-    # def train_model(self) -> None:
-    #     """ Performs the training of this classifier """
-    #     pass
-    #
-    # @abstractmethod
-    # def evaluate_model(self) -> None:
-    #     """ Evaluates the model currently in memory """
-    #     pass
-    #
+    @abstractmethod
+    def build_model(self) -> None:
+        """ Defines the classifier model structure and stores it as an instance attribute """
+        pass
+
+    @abstractmethod
+    def train_model(self) -> None:
+        """ Performs the training and evaluation of this classifier, on both the train set and the validation set """
+        pass
+
+    @abstractmethod
+    def evaluate_model(self) -> None:
+        """ Evaluates the model currently in memory """
+        pass
+
     # @abstractmethod
     # def export_model(self) -> None:
     #     """ Exports the model currently in memory in Tensorflow.js format """
