@@ -13,7 +13,7 @@ from tensorflow.keras.utils import to_categorical
 LOGGER = utils.get_logger(__name__)
 
 
-class StrongOriginalClassifier(FashionMNISTClassifier):
+class WeakOriginalClassifier(FashionMNISTClassifier):
     """ Class representing a strong classifier for the original Fashion-MNIST dataset """
     def __init__(self):
         """ This just calls the base class' constructor """
@@ -29,7 +29,7 @@ class StrongOriginalClassifier(FashionMNISTClassifier):
 
     def build_model(self) -> None:
         """ Defines the classifier model structure and stores it as an instance attribute """
-        self.model = Sequential(name='StrongOriginalClassifier')
+        self.model = Sequential(name='WeakOriginalClassifier')
         self.model.add(Input(shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
                              name='original_image',
                              dtype=float))
@@ -59,7 +59,7 @@ class StrongOriginalClassifier(FashionMNISTClassifier):
 
 
 if __name__ == '__main__':
-    clf = StrongOriginalClassifier()
+    clf = WeakOriginalClassifier()
     clf.preprocess_dataset()
     clf.build_model()
     clf.display_model()
