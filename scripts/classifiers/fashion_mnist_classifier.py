@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from math import sqrt
+import os
 from scripts import config, utils
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,17 +12,18 @@ LOGGER = utils.get_logger(__name__)
 
 class FashionMNISTClassifier(ABC):
     """ Abstract class representing the blueprint all classifiers on the Fashion-MNIST dataset must follow """
-    @abstractmethod
     def __init__(self):
         """ The base constructor loads the Fashion-MNIST dataset and stores it in instance attributes;
         it additionaly stores a model placeholder as instance attribute """
         (self.X_train, self.y_train), (self.X_test, self.y_test) = fashion_mnist.load_data()
-        validation_size = config.VALID_SET_PERCENTAGE * len(self.X_train)
+        validation_size = int(config.VALID_SET_PERCENTAGE * len(self.X_train))
         self.X_valid = self.X_train[: validation_size]
         self.y_valid = self.y_train[: validation_size]
         self.X_train = self.X_train[validation_size:]
         self.y_train = self.y_train[validation_size:]
         self.model = None
+        self.__training_history = None
+        self.__test_accuracy = None
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
@@ -61,6 +63,20 @@ class FashionMNISTClassifier(ABC):
             LOGGER.info(self.model.summary())
         else:
             LOGGER.info('>>> There is currently no model for this classifier')
+
+    def create_current_run_directory(self) -> str:
+        """ Computes the run index of the current classifier training, creates a directory for the corresponding results
+         and returns the name of the created directory """
+        run_index = 1
+        current_run_dir_name = self.__class__.__name__ + ' Run 1'
+
+        while os.path.isdir(os.path.join(config.CNN_RESULTS_PATH, current_run_dir_name)):
+            run_index += 1
+            current_run_dir_name = self.__class__.__name__ + ' Run {}'.format(str(run_index))
+
+        os.mkdir(os.path.join(config.CNN_RESULTS_PATH, current_run_dir_name))
+
+        return current_run_dir_name
 
     @abstractmethod
     def preprocess_dataset(self) -> None:
