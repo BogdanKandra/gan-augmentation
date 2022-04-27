@@ -93,3 +93,4 @@ if __name__ == '__main__':
     clf.display_dataset_information()
     clf.train_model()
     clf.evaluate_model()
+    clf.export_model()
