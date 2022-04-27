@@ -1,0 +1,1 @@
+The purpose of the 'models' directory is to contain the trained models which have been saved in Tensorflow.js format
