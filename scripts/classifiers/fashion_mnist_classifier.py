@@ -5,6 +5,7 @@ from scripts import config, utils
 import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.datasets import fashion_mnist
+from tensorflowjs.converters import save_keras_model
 
 
 LOGGER = utils.get_logger(__name__)
@@ -78,6 +79,11 @@ class FashionMNISTClassifier(ABC):
 
         return current_run_dir_name
 
+    def export_model(self) -> None:
+        """ Exports the model currently in memory in Tensorflow.js format """
+        artifacts_path = os.path.join(config.CNN_MODELS_PATH, self.__class__.__name__)
+        save_keras_model(self.model, artifacts_path)
+
     @abstractmethod
     def preprocess_dataset(self) -> None:
         """ Preprocesses the dataset currently in memory """
@@ -98,11 +104,6 @@ class FashionMNISTClassifier(ABC):
         """ Evaluates the model currently in memory """
         pass
 
-    # @abstractmethod
-    # def export_model(self) -> None:
-    #     """ Exports the model currently in memory in Tensorflow.js format """
-    #     pass
-    #
     # @abstractmethod
     # def run_model(self, image):
     #     """ Runs the model currently in memory on a sample image """
