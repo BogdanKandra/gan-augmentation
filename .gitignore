@@ -1,2 +1,4 @@
 .idea/
 **__pycache__/
+results/cnn-training/*
+results/gan-training/*
