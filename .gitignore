@@ -1,6 +1,6 @@
 .idea/
 **__pycache__/
-models/cnn/*
-models/gan/*
-results/cnn/*
-results/gan/*
+models/classifiers/*
+models/generators/*
+results/classifiers/*
+results/generators/*
