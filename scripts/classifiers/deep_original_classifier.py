@@ -10,6 +10,7 @@ from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
+from tensorflow.python.keras.optimizers import serialize
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
 
@@ -29,9 +30,9 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
         self.y_test = to_categorical(self.y_test)
 
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute.
-         The model used here is a deep neural network, consisting of the Input and Output layers and 3 hidden layers in
-         between. """
+        """ Defines the classifier model structure and stores it as an instance attribute. The model used here is a deep
+         neural network, consisting of the Input and Output layers and 3 hidden layers in between, with a vanilla SGD as
+         optimizer """
         self.model = Sequential(name='DNNOriginalClassifier')
         self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
                                   dtype=float,
@@ -71,7 +72,7 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
             f.write(json.dumps(self.__test_accuracy, indent=4))
 
         # Generate the classification report
-        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_SHALLOW, verbose=1)
+        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_DEEP, verbose=1)
         y_pred = np.argmax(predictions, axis=1)
         y_pred_categorical = to_categorical(y_pred)
         class_labels = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
@@ -88,7 +89,15 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
         utils.plot_confusion_matrix(cm, results_subdirectory_name, class_labels)
 
         # Generate a file containing model information and parameters
-        # TODO
+        training_info_name = 'Training Information.txt'
+        training_info = {
+            'batch_size': config.BATCH_SIZE_DEEP,
+            'num_epochs': config.NUM_EPOCHS_DEEP,
+            'model': json.loads(self.model.to_json()),
+            'optimizer': str(serialize(self.model.optimizer))
+        }
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, training_info_name), 'w') as f:
+            f.write(json.dumps(training_info, indent=4))
 
 
 if __name__ == '__main__':
