@@ -16,7 +16,7 @@ from tensorflow.python.keras.utils.np_utils import to_categorical
 LOGGER = utils.get_logger(__name__)
 
 
-class WeakOriginalClassifier(FashionMNISTClassifier):
+class CNNOriginalClassifier(FashionMNISTClassifier):
     """ Class representing a weak classifier for the original Fashion-MNIST dataset """
     def preprocess_dataset(self) -> None:
         """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
@@ -86,7 +86,7 @@ class WeakOriginalClassifier(FashionMNISTClassifier):
 
 
 if __name__ == '__main__':
-    clf = WeakOriginalClassifier()
+    clf = CNNOriginalClassifier()
     clf.preprocess_dataset()
     clf.build_model()
     clf.display_model()
