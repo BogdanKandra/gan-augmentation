@@ -70,9 +70,9 @@ class FashionMNISTClassifier(ABC):
         run_index = 1
         current_run_dir_name = self.__class__.__name__ + ' Run 1'
         if subdirectory_type == 'model':
-            subdir_path = config.CNN_MODELS_PATH
+            subdir_path = config.CLASSIFIERS_PATH
         elif subdirectory_type == 'result':
-            subdir_path = config.CNN_RESULTS_PATH
+            subdir_path = config.CLASSIFIER_RESULTS_PATH
         else:
             error_message = 'Subdirectory type must be one of "model" and "result" (given {})'.format(subdirectory_type)
             raise ValueError(error_message)
@@ -88,7 +88,7 @@ class FashionMNISTClassifier(ABC):
     def export_model(self) -> None:
         """ Exports the model currently in memory in Tensorflow.js format """
         model_subdirectory_name = self.create_current_run_directory('model')
-        artifacts_path = os.path.join(config.CNN_MODELS_PATH, model_subdirectory_name, self.__class__.__name__)
+        artifacts_path = os.path.join(config.CLASSIFIERS_PATH, model_subdirectory_name, self.__class__.__name__)
         save_keras_model(self.model, artifacts_path)
 
     @abstractmethod

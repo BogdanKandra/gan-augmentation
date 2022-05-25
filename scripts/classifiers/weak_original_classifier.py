@@ -60,12 +60,12 @@ class WeakOriginalClassifier(FashionMNISTClassifier):
         results_subdirectory_name = self.create_current_run_directory('result')
         utils.plot_results(results_subdirectory_name, self.__training_history)
         results_name = 'Training Results.txt'
-        with open(os.path.join(config.CNN_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
             f.write(json.dumps(self.__training_history, indent=4))
 
         # Save the test results
         results_name = 'Test Results.txt'
-        with open(os.path.join(config.CNN_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
             f.write(json.dumps(self.__test_accuracy, indent=4))
 
         # Generate the classification report
@@ -77,7 +77,7 @@ class WeakOriginalClassifier(FashionMNISTClassifier):
 
         report = sk_metrics.classification_report(self.y_test, y_pred_categorical, target_names=class_labels)
         report_name = 'Classification Report.txt'
-        with open(os.path.join(config.CNN_RESULTS_PATH, results_subdirectory_name, report_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, report_name), 'w') as f:
             f.write(report)
 
         self.y_test = np.argmax(self.y_test, axis=1)
