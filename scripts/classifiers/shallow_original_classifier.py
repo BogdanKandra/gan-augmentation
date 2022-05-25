@@ -4,8 +4,8 @@ from scripts.classifiers.fashion_mnist_classifier import FashionMNISTClassifier
 from scripts import config, utils
 import numpy as np
 import sklearn.metrics as sk_metrics
-from tensorflow.python.keras.activations import relu, softmax
-from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, InputLayer, MaxPooling2D
+from tensorflow.python.keras.activations import softmax
+from tensorflow.python.keras.layers import Dense, Flatten, InputLayer
 from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
 from tensorflow.python.keras.models import Sequential
@@ -29,7 +29,9 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
         self.y_test = to_categorical(self.y_test)
 
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute """
+        """ Defines the classifier model structure and stores it as an instance attribute.
+         The model used here is a shallow neural network, consisting only of the Input and Output layers, with a vanilla
+         SGD as optimizer """
         self.model = Sequential(name='SNNOriginalClassifier')
         self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
                                   dtype=float,
@@ -92,6 +94,6 @@ if __name__ == '__main__':
     clf.build_model()
     clf.display_model()
     clf.display_dataset_information()
-    clf.train_model()
-    clf.evaluate_model()
-    clf.export_model()
+    # clf.train_model()
+    # clf.evaluate_model()
+    # clf.export_model()
