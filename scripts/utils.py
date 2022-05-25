@@ -1,7 +1,9 @@
 import itertools
 import logging
+from math import sqrt
 import os
 import sys
+from typing import List
 from scripts import config
 from matplotlib import pyplot as plt
 import numpy as np
@@ -15,12 +17,14 @@ def get_logger(name: str) -> logging.Logger:
 
     return logger
 
+
 def is_perfect_square(number: int) -> bool:
     """ Checks whether the given number is a perfect square """
     if type(number) is not int:
         raise TypeError('Unexpected type for parameter "number" (Expected <int>, given <{}>)'.format(type(number)))
 
     return int(sqrt(number)) ** 2 == number
+
 
 def plot_results(subdirectory_name: str, history: dict) -> None:
     """ Plots the training and validation accuracy and loss """
@@ -51,7 +55,8 @@ def plot_results(subdirectory_name: str, history: dict) -> None:
     plt.savefig(figure_path, dpi=300)
     plt.close()
 
-def plot_confusion_matrix(conf_matrix, subdirectory_name, labels_list):
+
+def plot_confusion_matrix(conf_matrix: np.array, subdirectory_name: str, labels_list: List[str]) -> None:
     title = 'Confusion Matrix'
 
     plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
