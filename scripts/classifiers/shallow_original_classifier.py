@@ -10,6 +10,7 @@ from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
+from tensorflow.python.keras.optimizers import serialize
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
 
@@ -29,9 +30,8 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
         self.y_test = to_categorical(self.y_test)
 
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute.
-         The model used here is a shallow neural network, consisting only of the Input and Output layers, with a vanilla
-         SGD as optimizer """
+        """ Defines the classifier model structure and stores it as an instance attribute. The model used here is a
+         shallow neural network, consisting only of the Input and Output layers, with a vanilla SGD as optimizer """
         self.model = Sequential(name='SNNOriginalClassifier')
         self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
                                   dtype=float,
@@ -85,7 +85,15 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
         utils.plot_confusion_matrix(cm, results_subdirectory_name, class_labels)
 
         # Generate a file containing model information and parameters
-        # TODO
+        training_info_name = 'Training Information.txt'
+        training_info = {
+            'batch_size': config.BATCH_SIZE_SHALLOW,
+            'num_epochs': config.NUM_EPOCHS_SHALLOW,
+            'model': json.loads(self.model.to_json()),
+            'optimizer': str(serialize(self.model.optimizer))
+        }
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, training_info_name), 'w') as f:
+            f.write(json.dumps(training_info, indent=4))
 
 
 if __name__ == '__main__':
