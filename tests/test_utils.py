@@ -1,9 +1,16 @@
+from logging import Logger
 import scripts.utils as utils
 import pytest
 
 
 class TestUtils:
     """ Tests for the utils script """
+    def test_get_logger(self):
+        """ Tests that the correct logger instance is returned by the get_logger function """
+        logger = utils.get_logger(__name__)
+        assert type(logger) == Logger
+        assert logger.getEffectiveLevel() == 10
+
     def test_is_perfect_square_wrong_type(self):
         """ Tests that a TypeError is raised when the type of the parameter passed to is_perfect_square is not int """
         with pytest.raises(TypeError) as e:
