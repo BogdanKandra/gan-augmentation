@@ -1,1 +1,1 @@
-The purpose of the 'results/gan' directory is to contain training results for the GAN architectures.
+The purpose of the 'results/generators' directory is to contain training results for the GAN architectures.

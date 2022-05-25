@@ -1,1 +1,1 @@
-The purpose of the 'models/cnn' directory is to contain the trained CNN models, saved in Tensorflow.js format
+The purpose of the 'models/classifiers' directory is to contain the trained classifiers, saved in Tensorflow.js format
