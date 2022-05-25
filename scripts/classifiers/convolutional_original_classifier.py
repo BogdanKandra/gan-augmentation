@@ -30,7 +30,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
 
     def build_model(self) -> None:
         """ Defines the classifier model structure and stores it as an instance attribute """
-        self.model = Sequential(name='WeakOriginalClassifier')
+        self.model = Sequential(name='CNNOriginalClassifier')
         self.model.add(Input(shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
                              name='original_image',
                              dtype=float))
@@ -48,10 +48,10 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
         """ Performs the training and evaluation of this classifier, on both the train set and the validation set.
          The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric is Accuracy,
           which is appropriate for our problem, because the dataset classes are balanced.  """
-        self.__training_history = self.model.fit(x=self.X_train, y=self.y_train, batch_size=config.BATCH_SIZE_WEAK,
-                                                 epochs=config.NUM_EPOCHS_WEAK, verbose=1,
+        self.__training_history = self.model.fit(x=self.X_train, y=self.y_train, batch_size=config.BATCH_SIZE_SHALLOW,
+                                                 epochs=config.NUM_EPOCHS_SHALLOW, verbose=1,
                                                  validation_data=(self.X_valid, self.y_valid)).history
-        self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test, batch_size=config.BATCH_SIZE_WEAK,
+        self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test, batch_size=config.BATCH_SIZE_SHALLOW,
                                                    verbose=1, return_dict=True)
 
     def evaluate_model(self) -> None:
@@ -69,7 +69,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
             f.write(json.dumps(self.__test_accuracy, indent=4))
 
         # Generate the classification report
-        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_WEAK, verbose=1)
+        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_SHALLOW, verbose=1)
         y_pred = np.argmax(predictions, axis=1)
         y_pred_categorical = to_categorical(y_pred)
         class_labels = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
