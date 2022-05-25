@@ -3,7 +3,6 @@ from math import sqrt
 import os
 from scripts import config, utils
 import matplotlib.pyplot as plt
-import numpy as np
 from tensorflow.keras.datasets import fashion_mnist
 from tensorflowjs.converters import save_keras_model
 
@@ -15,7 +14,7 @@ class FashionMNISTClassifier(ABC):
     """ Abstract class representing the blueprint all classifiers on the Fashion-MNIST dataset must follow """
     def __init__(self):
         """ The base constructor loads the Fashion-MNIST dataset and stores it in instance attributes;
-        it additionaly stores a model placeholder as instance attribute """
+        it additionally stores a model placeholder as instance attribute """
         (self.X_train, self.y_train), (self.X_test, self.y_test) = fashion_mnist.load_data()
         validation_size = int(config.VALID_SET_PERCENTAGE * len(self.X_train))
         self.X_valid = self.X_train[: validation_size]
@@ -65,23 +64,31 @@ class FashionMNISTClassifier(ABC):
         else:
             LOGGER.info('>>> There is currently no model for this classifier')
 
-    def create_current_run_directory(self) -> str:
+    def create_current_run_directory(self, subdirectory_type: str) -> str:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding results
          and returns the name of the created directory """
         run_index = 1
         current_run_dir_name = self.__class__.__name__ + ' Run 1'
+        if subdirectory_type == 'model':
+            subdir_path = config.CNN_MODELS_PATH
+        elif subdirectory_type == 'result':
+            subdir_path = config.CNN_RESULTS_PATH
+        else:
+            error_message = 'Subdirectory type must be one of "model" and "result" (given {})'.format(subdirectory_type)
+            raise ValueError(error_message)
 
-        while os.path.isdir(os.path.join(config.CNN_RESULTS_PATH, current_run_dir_name)):
+        while os.path.isdir(os.path.join(subdir_path, current_run_dir_name)):
             run_index += 1
             current_run_dir_name = self.__class__.__name__ + ' Run {}'.format(str(run_index))
 
-        os.mkdir(os.path.join(config.CNN_RESULTS_PATH, current_run_dir_name))
+        os.mkdir(os.path.join(subdir_path, current_run_dir_name))
 
         return current_run_dir_name
 
     def export_model(self) -> None:
         """ Exports the model currently in memory in Tensorflow.js format """
-        artifacts_path = os.path.join(config.CNN_MODELS_PATH, self.__class__.__name__)
+        model_subdirectory_name = self.create_current_run_directory('model')
+        artifacts_path = os.path.join(config.CNN_MODELS_PATH, model_subdirectory_name, self.__class__.__name__)
         save_keras_model(self.model, artifacts_path)
 
     @abstractmethod
