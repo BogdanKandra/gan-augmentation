@@ -88,7 +88,7 @@ class FashionMNISTClassifier(ABC):
     def export_model(self) -> None:
         """ Exports the model currently in memory in Tensorflow.js format """
         model_subdirectory_name = self.create_current_run_directory('model')
-        artifacts_path = os.path.join(config.CLASSIFIERS_PATH, model_subdirectory_name, self.__class__.__name__)
+        artifacts_path = os.path.join(config.CLASSIFIERS_PATH, model_subdirectory_name)
         save_keras_model(self.model, artifacts_path)
 
     @abstractmethod
