@@ -2,16 +2,15 @@ import json
 import os
 from scripts.classifiers.fashion_mnist_classifier import FashionMNISTClassifier
 from scripts import config, utils
-from matplotlib import pyplot as plt
 import numpy as np
 import sklearn.metrics as sk_metrics
-from tensorflow.keras.activations import relu, softmax
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input, MaxPooling2D
-from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras.metrics import CategoricalAccuracy
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import SGD
-from tensorflow.keras.utils import to_categorical
+from tensorflow.python.keras.activations import relu, softmax
+from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, Input, MaxPooling2D
+from tensorflow.python.keras.losses import CategoricalCrossentropy
+from tensorflow.python.keras.metrics import CategoricalAccuracy
+from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
+from tensorflow.python.keras.utils.np_utils import to_categorical
 
 
 LOGGER = utils.get_logger(__name__)
@@ -58,7 +57,7 @@ class WeakOriginalClassifier(FashionMNISTClassifier):
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
-        results_subdirectory_name = self.create_current_run_directory()
+        results_subdirectory_name = self.create_current_run_directory('result')
         utils.plot_results(results_subdirectory_name, self.__training_history)
         results_name = 'Training Results.txt'
         with open(os.path.join(config.CNN_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
@@ -84,6 +83,7 @@ class WeakOriginalClassifier(FashionMNISTClassifier):
         self.y_test = np.argmax(self.y_test, axis=1)
         cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(10)))
         utils.plot_confusion_matrix(cm, results_subdirectory_name, class_labels)
+
 
 if __name__ == '__main__':
     clf = WeakOriginalClassifier()
