@@ -35,7 +35,8 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
     def build_model(self) -> None:
         """ Defines the classifier model structure and stores it as an instance attribute. The model used here is a
          convolutional neural network, consisting of 3 convolutional blocks with pooling, dropout and L2 regularization,
-         followed by 2 dense layers with dropout and Adam as optimizer """
+         followed by 2 dense layers with dropout and Adam as optimizer. Early stopping and TensorBoard callbacks are
+         also implemented """
         l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 
         self.model = Sequential(name='CNNOriginalClassifier')
