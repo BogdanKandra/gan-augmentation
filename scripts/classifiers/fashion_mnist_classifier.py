@@ -24,6 +24,7 @@ class FashionMNISTClassifier(ABC):
         self.model = None
         self.__training_history = None
         self.__test_accuracy = None
+        self.__results_subdirectory = None
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
