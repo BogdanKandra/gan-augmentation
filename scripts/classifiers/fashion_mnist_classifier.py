@@ -22,9 +22,9 @@ class FashionMNISTClassifier(ABC):
         self.X_train = self.X_train[validation_size:]
         self.y_train = self.y_train[validation_size:]
         self.model = None
+        self.results_subdirectory = None
         self.__training_history = None
         self.__test_accuracy = None
-        self.__results_subdirectory = None
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
@@ -61,35 +61,26 @@ class FashionMNISTClassifier(ABC):
     def display_model(self) -> None:
         """ Logs the summary of the model currently in memory """
         if self.model is not None:
-            LOGGER.info(self.model.summary())
+            self.model.summary()
         else:
             LOGGER.info('>>> There is currently no model for this classifier')
 
-    def create_current_run_directory(self, subdirectory_type: str) -> str:
+    def create_current_run_directory(self) -> None:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding results
          and returns the name of the created directory """
         run_index = 1
         current_run_dir_name = self.__class__.__name__ + ' Run 1'
-        if subdirectory_type == 'model':
-            subdir_path = config.CLASSIFIERS_PATH
-        elif subdirectory_type == 'result':
-            subdir_path = config.CLASSIFIER_RESULTS_PATH
-        else:
-            error_message = 'Subdirectory type must be one of "model" and "result" (given {})'.format(subdirectory_type)
-            raise ValueError(error_message)
 
-        while os.path.isdir(os.path.join(subdir_path, current_run_dir_name)):
+        while os.path.isdir(os.path.join(config.CLASSIFIER_RESULTS_PATH, current_run_dir_name)):
             run_index += 1
             current_run_dir_name = self.__class__.__name__ + ' Run {}'.format(str(run_index))
 
-        os.mkdir(os.path.join(subdir_path, current_run_dir_name))
-
-        return current_run_dir_name
+        os.mkdir(os.path.join(config.CLASSIFIER_RESULTS_PATH, current_run_dir_name))
+        self.results_subdirectory = current_run_dir_name
 
     def export_model(self) -> None:
         """ Exports the model currently in memory in Tensorflow.js format """
-        model_subdirectory_name = self.create_current_run_directory('model')
-        artifacts_path = os.path.join(config.CLASSIFIERS_PATH, model_subdirectory_name)
+        artifacts_path = os.path.join(config.CLASSIFIERS_PATH, self.results_subdirectory)
         save_keras_model(self.model, artifacts_path)
 
     @abstractmethod
