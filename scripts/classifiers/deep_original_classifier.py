@@ -51,6 +51,7 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
         """ Performs the training and evaluation of this classifier, on both the train set and the validation set.
          The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric is Accuracy,
           which is appropriate for our problem, because the dataset classes are balanced.  """
+        self.create_current_run_directory()
         self.__training_history = self.model.fit(x=self.X_train, y=self.y_train, batch_size=config.BATCH_SIZE_DEEP,
                                                  epochs=config.NUM_EPOCHS_DEEP, verbose=1,
                                                  validation_data=(self.X_valid, self.y_valid)).history
@@ -60,15 +61,14 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
-        results_subdirectory_name = self.create_current_run_directory('result')
-        utils.plot_results(results_subdirectory_name, self.__training_history)
+        utils.plot_results(self.results_subdirectory, self.__training_history)
         results_name = 'Training Results.txt'
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, results_name), 'w') as f:
             f.write(json.dumps(self.__training_history, indent=4))
 
         # Save the test results
         results_name = 'Test Results.txt'
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, results_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, results_name), 'w') as f:
             f.write(json.dumps(self.__test_accuracy, indent=4))
 
         # Generate the classification report
@@ -80,13 +80,13 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
 
         report = sk_metrics.classification_report(self.y_test, y_pred_categorical, target_names=class_labels)
         report_name = 'Classification Report.txt'
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, report_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, report_name), 'w') as f:
             f.write(report)
 
         # Generate the confusion matrix
         self.y_test = np.argmax(self.y_test, axis=1)
         cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(10)))
-        utils.plot_confusion_matrix(cm, results_subdirectory_name, class_labels)
+        utils.plot_confusion_matrix(cm, self.results_subdirectory, class_labels)
 
         # Generate a file containing model information and parameters
         training_info_name = 'Training Information.txt'
@@ -96,7 +96,7 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
             'model': json.loads(self.model.to_json()),
             'optimizer': str(serialize(self.model.optimizer))
         }
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, results_subdirectory_name, training_info_name), 'w') as f:
+        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, training_info_name), 'w') as f:
             f.write(json.dumps(training_info, indent=4))
 
 
