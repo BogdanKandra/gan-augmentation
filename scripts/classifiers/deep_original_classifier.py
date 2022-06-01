@@ -90,13 +90,14 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
 
         # Generate a file containing model information and parameters
         training_info_name = 'Training Information.txt'
+        training_info_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, training_info_name)
         training_info = {
             'batch_size': config.BATCH_SIZE_DEEP,
             'num_epochs': config.NUM_EPOCHS_DEEP,
             'model': json.loads(self.model.to_json()),
             'optimizer': str(serialize(self.model.optimizer))
         }
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, training_info_name), 'w') as f:
+        with open(training_info_path, 'w') as f:
             f.write(json.dumps(training_info, indent=4))
 
 

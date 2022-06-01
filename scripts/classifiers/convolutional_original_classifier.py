@@ -133,6 +133,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
 
         # Generate a file containing model information and parameters
         training_info_name = 'Training Information.txt'
+        training_info_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, training_info_name)
         try:
             model_str = json.loads(self.model.to_json())
         except NotImplementedError:
@@ -143,7 +144,6 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
             'model': model_str,
             'optimizer': str(serialize(self.model.optimizer))
         }
-        training_info_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, training_info_name)
         with open(training_info_path, 'w') as f:
             f.write(json.dumps(training_info, indent=4))
 
