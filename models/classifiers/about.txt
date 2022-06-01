@@ -1,0 +1,1 @@
+The purpose of the 'models/classifiers' directory is to contain the trained classifiers, saved in Tensorflow.js format
