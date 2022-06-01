@@ -1,6 +1,2 @@
 .idea/
 **__pycache__/
-models/classifiers/*
-models/generators/*
-results/classifiers/*
-results/generators/*
