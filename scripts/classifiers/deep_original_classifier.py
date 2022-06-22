@@ -5,6 +5,7 @@ from scripts import config, utils
 import numpy as np
 import sklearn.metrics as sk_metrics
 from tensorflow.python.keras.activations import relu, softmax
+from tensorflow.python.keras.callbacks import EarlyStopping
 from tensorflow.python.keras.layers import Dense, Flatten, InputLayer
 from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
@@ -42,7 +43,7 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
         self.model.add(Dense(units=64, activation=relu, kernel_initializer='he_uniform'))
         self.model.add(Dense(units=16, activation=relu, kernel_initializer='he_uniform'))
         self.model.add(Dense(units=10, activation=softmax, kernel_initializer='he_uniform'))
-        optimizer = SGD(learning_rate=0.05)
+        optimizer = SGD(learning_rate=0.01)
         self.model.compile(optimizer=optimizer,
                            loss=CategoricalCrossentropy(),
                            metrics=[CategoricalAccuracy(), Precision(), Recall()])
@@ -52,8 +53,10 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
          The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric is Accuracy,
           which is appropriate for our problem, because the dataset classes are balanced.  """
         self.create_current_run_directory()
+        es_callback = EarlyStopping(monitor='val_loss', patience=5, verbose=1, restore_best_weights=True)
+
         self.__training_history = self.model.fit(x=self.X_train, y=self.y_train, batch_size=config.BATCH_SIZE_DEEP,
-                                                 epochs=config.NUM_EPOCHS_DEEP, verbose=1,
+                                                 epochs=config.NUM_EPOCHS_DEEP, verbose=1, callbacks=[es_callback],
                                                  validation_data=(self.X_valid, self.y_valid)).history
         self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test, batch_size=config.BATCH_SIZE_DEEP,
                                                    verbose=1, return_dict=True)
