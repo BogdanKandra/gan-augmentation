@@ -95,7 +95,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
                                                  validation_data=(self.X_valid, self.y_valid)).history
         self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test,
                                                    batch_size=config.BATCH_SIZE_CONVOLUTIONAL,
-                                                   verbose=1, callbacks=[es_callback, tb_callback], return_dict=True)
+                                                   verbose=1, return_dict=True)
 
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
@@ -111,11 +111,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
             f.write(json.dumps(self.__test_accuracy, indent=4))
 
         # Generate the classification report
-        logs_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, 'logs')
-        es_callback = EarlyStopping(monitor='val_loss', patience=5)
-        tb_callback = TensorBoard(log_dir=logs_path)
-        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_CONVOLUTIONAL, verbose=1,
-                                         callbacks=[es_callback, tb_callback])
+        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_CONVOLUTIONAL, verbose=1)
         y_pred = np.argmax(predictions, axis=1)
         y_pred_categorical = to_categorical(y_pred)
         class_labels = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
