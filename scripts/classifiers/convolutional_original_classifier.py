@@ -85,7 +85,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
           which is appropriate for our problem, because the dataset classes are balanced.  """
         self.create_current_run_directory()
         logs_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, 'logs')
-        es_callback = EarlyStopping(monitor='val_loss', patience=5)
+        es_callback = EarlyStopping(monitor='val_loss', patience=5, verbose=1, restore_best_weights=True)
         tb_callback = TensorBoard(log_dir=logs_path)
 
         self.__training_history = self.model.fit(x=self.X_train, y=self.y_train,
