@@ -46,29 +46,27 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
 
         self.model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation=relu,
                               kernel_initializer='he_uniform', kernel_regularizer=l2))
-        self.model.add(Conv2D(filters=64, kernel_size=3, activation=relu,
+        self.model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation=relu,
                               kernel_initializer='he_uniform', kernel_regularizer=l2))
         self.model.add(MaxPooling2D(pool_size=2))
         self.model.add(Dropout(rate=0.2))
 
         self.model.add(Conv2D(filters=128, kernel_size=3, padding='same', activation=relu,
                               kernel_initializer='he_uniform', kernel_regularizer=l2))
-        self.model.add(Conv2D(filters=128, kernel_size=3, activation=relu,
+        self.model.add(Conv2D(filters=128, kernel_size=3, padding='same', activation=relu,
                               kernel_initializer='he_uniform', kernel_regularizer=l2))
         self.model.add(MaxPooling2D(pool_size=2))
         self.model.add(Dropout(rate=0.3))
 
         self.model.add(Conv2D(filters=256, kernel_size=3, padding='same', activation=relu,
                               kernel_initializer='he_uniform', kernel_regularizer=l2))
-        self.model.add(Conv2D(filters=256, kernel_size=3, activation=relu,
+        self.model.add(Conv2D(filters=256, kernel_size=3, padding='same', activation=relu,
                               kernel_initializer='he_uniform', kernel_regularizer=l2))
         self.model.add(MaxPooling2D(pool_size=2))
         self.model.add(Dropout(rate=0.4))
 
         self.model.add(Flatten())
 
-        self.model.add(Dense(units=1024, activation=relu, kernel_initializer='he_uniform'))
-        self.model.add(Dropout(rate=0.3))
         self.model.add(Dense(units=512, activation=relu, kernel_initializer='he_uniform'))
         self.model.add(Dropout(rate=0.2))
 
@@ -150,6 +148,6 @@ if __name__ == '__main__':
     clf.build_model()
     clf.display_model()
     clf.display_dataset_information()
-    clf.train_model()
-    clf.evaluate_model()
-    clf.export_model()
+    # clf.train_model()
+    # clf.evaluate_model()
+    # clf.export_model()
