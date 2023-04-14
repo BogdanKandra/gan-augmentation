@@ -1,9 +1,5 @@
-import json
-import os
 from scripts.classifiers.fashion_mnist_classifier import FashionMNISTClassifier
 from scripts import config, utils
-import numpy as np
-import sklearn.metrics as sk_metrics
 from tensorflow.python.keras.activations import relu, softmax
 from tensorflow.python.keras.callbacks import EarlyStopping
 from tensorflow.python.keras.layers import Dense, Flatten, InputLayer
@@ -11,7 +7,6 @@ from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
-from tensorflow.python.keras.optimizers import serialize
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
 
@@ -64,44 +59,7 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
-        utils.plot_results(self.results_subdirectory, self.__training_history)
-        results_name = 'Training Results.txt'
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, results_name), 'w') as f:
-            f.write(json.dumps(self.__training_history, indent=4))
-
-        # Save the test results
-        results_name = 'Test Results.txt'
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, results_name), 'w') as f:
-            f.write(json.dumps(self.__test_accuracy, indent=4))
-
-        # Generate the classification report
-        predictions = self.model.predict(x=self.X_test, batch_size=config.BATCH_SIZE_DEEP, verbose=1)
-        y_pred = np.argmax(predictions, axis=1)
-        y_pred_categorical = to_categorical(y_pred)
-        class_labels = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
-                        'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle Boot']
-
-        report = sk_metrics.classification_report(self.y_test, y_pred_categorical, target_names=class_labels)
-        report_name = 'Classification Report.txt'
-        with open(os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, report_name), 'w') as f:
-            f.write(report)
-
-        # Generate the confusion matrix
-        self.y_test = np.argmax(self.y_test, axis=1)
-        cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(10)))
-        utils.plot_confusion_matrix(cm, self.results_subdirectory, class_labels)
-
-        # Generate a file containing model information and parameters
-        training_info_name = 'Training Information.txt'
-        training_info_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, self.results_subdirectory, training_info_name)
-        training_info = {
-            'batch_size': config.BATCH_SIZE_DEEP,
-            'num_epochs': config.NUM_EPOCHS_DEEP,
-            'model': json.loads(self.model.to_json()),
-            'optimizer': str(serialize(self.model.optimizer))
-        }
-        with open(training_info_path, 'w') as f:
-            f.write(json.dumps(training_info, indent=4))
+        super().evaluate_model(config.DEEP_CLF_HYPERPARAMS)
 
 
 if __name__ == '__main__':
