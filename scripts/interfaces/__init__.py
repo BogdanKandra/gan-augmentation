@@ -1,1 +1,1 @@
-from fashion_mnist_model import FashionMNISTModel
+from scripts.interfaces.fashion_mnist_model import FashionMNISTModel
