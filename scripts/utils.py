@@ -1,7 +1,6 @@
 import itertools
 import logging
 from math import sqrt
-import os
 import sys
 from typing import List
 from scripts import config
@@ -51,7 +50,7 @@ def plot_results(subdirectory_name: str, history: dict) -> None:
     plt.ylim([0, max(plt.ylim())])
     plt.title('Training and Validation Loss')
 
-    figure_path = os.path.join(config.CLASSIFIER_RESULTS_PATH, subdirectory_name, 'Training Results.png')
+    figure_path = config.CLASSIFIER_RESULTS_PATH / subdirectory_name / 'Training Results.png'
     plt.savefig(figure_path, dpi=300)
     plt.close()
 
@@ -75,5 +74,5 @@ def plot_confusion_matrix(conf_matrix: np.array, subdirectory_name: str, labels_
     plt.tight_layout()
     plt.xlabel('Predicted label')
     plt.ylabel('True label')
-    plt.savefig(os.path.join(config.CLASSIFIER_RESULTS_PATH, subdirectory_name, '{}.png'.format(title)), dpi=300)
+    plt.savefig(config.CLASSIFIER_RESULTS_PATH / subdirectory_name / '{}.png'.format(title), dpi=300)
     plt.close()
