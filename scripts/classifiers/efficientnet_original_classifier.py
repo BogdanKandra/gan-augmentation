@@ -1,4 +1,4 @@
-from scripts.classifiers.fashion_mnist_classifier import FashionMNISTClassifier
+from scripts.classifiers import FashionMNISTClassifier
 from scripts import config, utils
 import numpy as np
 from tensorflow.python.keras.activations import softmax

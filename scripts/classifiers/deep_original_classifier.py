@@ -1,4 +1,4 @@
-from scripts.classifiers.fashion_mnist_classifier import FashionMNISTClassifier
+from scripts.classifiers import FashionMNISTClassifier
 from scripts import config, utils
 from tensorflow.python.keras.activations import relu, softmax
 from tensorflow.python.keras.callbacks import EarlyStopping
