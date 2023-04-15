@@ -1,5 +1,13 @@
-from pathlib import Path
 import os
+from enum import Enum
+from pathlib import Path
+
+
+class ClassifierType(Enum):
+    SHALLOW = 1
+    DEEP = 2
+    CONVOLUTIONAL = 3
+    TRANSFER_LEARNING = 4
 
 
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
