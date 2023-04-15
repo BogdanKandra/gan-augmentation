@@ -1,11 +1,13 @@
 import itertools
 import logging
-from math import sqrt
 import sys
+from math import sqrt
 from typing import List
-from scripts import config
-from matplotlib import pyplot as plt
+
 import numpy as np
+from matplotlib import pyplot as plt
+
+from scripts import config
 
 
 def get_logger(name: str) -> logging.Logger:
