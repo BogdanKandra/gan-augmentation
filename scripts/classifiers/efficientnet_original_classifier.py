@@ -1,17 +1,22 @@
-from scripts.classifiers import FashionMNISTClassifier
-from scripts import config, utils
 import numpy as np
-from tensorflow.python.keras.activations import softmax
 from tensorflow.keras.applications import EfficientNetB0
-from tensorflow.python.keras.callbacks import EarlyStopping, TensorBoard
-from tensorflow.python.keras.layers import Dense, Dropout, InputLayer, GlobalAveragePooling2D
 from tensorflow.keras.layers import BatchNormalization, Resizing
+from tensorflow.python.keras.activations import softmax
+from tensorflow.python.keras.callbacks import EarlyStopping, TensorBoard
+from tensorflow.python.keras.layers import (
+    Dense,
+    Dropout,
+    GlobalAveragePooling2D,
+    InputLayer,
+)
 from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
+from scripts import config, utils
+from scripts.classifiers import FashionMNISTClassifier
 
 LOGGER = utils.get_logger(__name__)
 
@@ -55,7 +60,7 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
 
         self.model.add(Dense(10, activation=softmax, kernel_initializer='he_uniform'))
 
-        optimizer = Adam(learning_rate=0.001, decay=0.01 / config.NUM_EPOCHS_EFFICIENTNET)
+        optimizer = Adam(learning_rate=0.001, decay=0.01 / config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS'])
         self.model.compile(optimizer=optimizer,
                            loss=CategoricalCrossentropy(),
                            metrics=[CategoricalAccuracy(), Precision(), Recall()])
@@ -70,26 +75,15 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
         tb_callback = TensorBoard(log_dir=logs_path)
 
         self.__training_history = self.model.fit(x=self.X_train, y=self.y_train,
-                                                 batch_size=config.BATCH_SIZE_EFFICIENTNET,
-                                                 epochs=config.NUM_EPOCHS_EFFICIENTNET, verbose=1,
+                                                 batch_size=config.EFFICIENTNET_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                                 epochs=config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS'], verbose=1,
                                                  callbacks=[es_callback, tb_callback],
                                                  validation_data=(self.X_valid, self.y_valid)).history
         self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test,
-                                                   batch_size=config.BATCH_SIZE_EFFICIENTNET,
+                                                   batch_size=config.EFFICIENTNET_CLF_HYPERPARAMS['BATCH_SIZE'],
                                                    verbose=1, return_dict=True)
 
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
         super().evaluate_model(config.EFFICIENTNET_CLF_HYPERPARAMS)
-
-
-if __name__ == '__main__':
-    clf = EfficientNetOriginalClassifier()
-    clf.preprocess_dataset()
-    clf.display_dataset_information()
-    clf.build_model()
-    clf.display_model()
-    clf.train_model()
-    clf.evaluate_model()
-    clf.export_model()

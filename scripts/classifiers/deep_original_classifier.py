@@ -1,5 +1,3 @@
-from scripts.classifiers import FashionMNISTClassifier
-from scripts import config, utils
 from tensorflow.python.keras.activations import relu, softmax
 from tensorflow.python.keras.callbacks import EarlyStopping
 from tensorflow.python.keras.layers import Dense, Flatten, InputLayer
@@ -9,6 +7,8 @@ from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
+from scripts import config, utils
+from scripts.classifiers import FashionMNISTClassifier
 
 LOGGER = utils.get_logger(__name__)
 
@@ -50,24 +50,16 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
         self._create_current_run_directory()
         es_callback = EarlyStopping(monitor='val_loss', patience=5, verbose=1, restore_best_weights=True)
 
-        self.__training_history = self.model.fit(x=self.X_train, y=self.y_train, batch_size=config.BATCH_SIZE_DEEP,
-                                                 epochs=config.NUM_EPOCHS_DEEP, verbose=1, callbacks=[es_callback],
+        self.__training_history = self.model.fit(x=self.X_train, y=self.y_train,
+                                                 batch_size=config.DEEP_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                                 epochs=config.DEEP_CLF_HYPERPARAMS['NUM_EPOCHS'],
+                                                 verbose=1, callbacks=[es_callback],
                                                  validation_data=(self.X_valid, self.y_valid)).history
-        self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test, batch_size=config.BATCH_SIZE_DEEP,
+        self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test,
+                                                   batch_size=config.DEEP_CLF_HYPERPARAMS['BATCH_SIZE'],
                                                    verbose=1, return_dict=True)
 
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
         super().evaluate_model(config.DEEP_CLF_HYPERPARAMS)
-
-
-if __name__ == '__main__':
-    clf = DNNOriginalClassifier()
-    clf.preprocess_dataset()
-    clf.build_model()
-    clf.display_model()
-    clf.display_dataset_information()
-    # clf.train_model()
-    # clf.evaluate_model()
-    # clf.export_model()

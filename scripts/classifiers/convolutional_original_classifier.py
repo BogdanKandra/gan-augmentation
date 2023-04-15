@@ -1,15 +1,22 @@
-from scripts.classifiers import FashionMNISTClassifier
-from scripts import config, utils
+import tensorflow.python.keras.regularizers as regularizers
 from tensorflow.python.keras.activations import relu, softmax
 from tensorflow.python.keras.callbacks import EarlyStopping, TensorBoard
-from tensorflow.python.keras.layers import Conv2D, Dense, Dropout, Flatten, InputLayer, MaxPooling2D
+from tensorflow.python.keras.layers import (
+    Conv2D,
+    Dense,
+    Dropout,
+    Flatten,
+    InputLayer,
+    MaxPooling2D,
+)
 from tensorflow.python.keras.losses import CategoricalCrossentropy
 from tensorflow.python.keras.metrics import CategoricalAccuracy, Precision, Recall
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.adam import Adam
-import tensorflow.python.keras.regularizers as regularizers
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
+from scripts import config, utils
+from scripts.classifiers import FashionMNISTClassifier
 
 LOGGER = utils.get_logger(__name__)
 
@@ -67,7 +74,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
 
         self.model.add(Dense(10, activation=softmax, kernel_initializer='he_uniform'))
 
-        optimizer = Adam(learning_rate=0.0001, decay=0.0001 / config.NUM_EPOCHS_CONVOLUTIONAL)
+        optimizer = Adam(learning_rate=0.0001, decay=0.0001 / config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'])
         self.model.compile(optimizer=optimizer,
                            loss=CategoricalCrossentropy(),
                            metrics=[CategoricalAccuracy(), Precision(), Recall()])
@@ -82,26 +89,15 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
         tb_callback = TensorBoard(log_dir=logs_path)
 
         self.__training_history = self.model.fit(x=self.X_train, y=self.y_train,
-                                                 batch_size=config.BATCH_SIZE_CONVOLUTIONAL,
-                                                 epochs=config.NUM_EPOCHS_CONVOLUTIONAL, verbose=1,
-                                                 callbacks=[es_callback, tb_callback],
+                                                 batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                                 epochs=config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'],
+                                                 verbose=1, callbacks=[es_callback, tb_callback],
                                                  validation_data=(self.X_valid, self.y_valid)).history
         self.__test_accuracy = self.model.evaluate(x=self.X_test, y=self.y_test,
-                                                   batch_size=config.BATCH_SIZE_CONVOLUTIONAL,
+                                                   batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'],
                                                    verbose=1, return_dict=True)
 
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
         super().evaluate_model(config.CONVOLUTIONAL_CLF_HYPERPARAMS)
-
-
-if __name__ == '__main__':
-    clf = CNNOriginalClassifier()
-    clf.preprocess_dataset()
-    clf.build_model()
-    clf.display_model()
-    clf.display_dataset_information()
-    # clf.train_model()
-    # clf.evaluate_model()
-    # clf.export_model()
