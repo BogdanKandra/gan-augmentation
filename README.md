@@ -15,6 +15,7 @@ Studying the utility of GANs in augmenting datasets used for classification prob
 - scripts
     - classifiers
     - generators
+    - interfaces
 - tests
 
 <br><br><br>
@@ -41,11 +42,17 @@ The naming scheme for results directories is <b><i>\<Model Architecture\>\<Datas
 # Scripts
 
 The scripts directory contains:
-- scripts for defining the classifier and generator models
-- script containing project configuration constants, such as project paths and model training hyperparameter default values
-- script containing utilitary functions
+- <i>classifiers</i> directory - scripts defining classifier models
+- <i>generators</i> directory - scripts defining generator models
+- <i>interfaces</i> directory - script containing the <b>FashionMNISTModel</b> interface
+- <i>config.py</i> - script containing project configuration constants, such as project paths and model training hyperparameter default values
+- <i>utils.py</i> - script containing utilitary functions
 
-TODO - Write about the architecture of the classifiers (abstract classifier -> concrete classifiers, differing by the model architecture and original / augmented dataset) <br><br><br>
+Architecture:
+- <b>FashionMNISTModel</b> interface
+    - <b>FashionMNISTClassifier</b> abstract class for classifiers
+    - <b>FashionMNISTGenerator</b> abstract class for generators
+        - <b>\<Model Architecture\>\<Dataset Type\>\<Model Type\></b> concrete classes, differing by the architecture of the model (Shallow NN / Deep NN / CNN / Transfer Learning NN), the type of dataset used (original / augmented) and by the type of the model (Classifier / Generator) <br><br><br>
 
 # Tests
 
@@ -53,8 +60,6 @@ The tests directory contains unit tests for the scripts. <br><br><br>
 
 # TODO
 
-- [TEST] Display random images in FashionMNISTClassifier -> display_dataset_sample()
 - Remove magic numbers
-- Write notebooks (move evaluation from classes' main() functions to here)
 - Write tests for the classifier scripts ???
 - Maybe create a class structure for representing the training data ?
