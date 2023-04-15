@@ -17,8 +17,8 @@ LOGGER = utils.get_logger(__name__)
 
 
 class EfficientNetOriginalClassifier(FashionMNISTClassifier):
-    """ Class representing a <TBA> classifier for the original Fashion-MNIST dataset, using the transfer learning
-     approach """
+    """ Class representing a very strong classifier for the original Fashion-MNIST dataset,
+    using the transfer learning approach """
     def preprocess_dataset(self) -> None:
         """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
         # Preprocess input
@@ -64,7 +64,7 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
         """ Performs the training and evaluation of this classifier, on both the train set and the validation set.
          The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric is Accuracy,
           which is appropriate for our problem, because the dataset classes are balanced.  """
-        self.create_current_run_directory()
+        self._create_current_run_directory()
         logs_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'logs'
         es_callback = EarlyStopping(monitor='val_loss', patience=10, verbose=1, restore_best_weights=True)
         tb_callback = TensorBoard(log_dir=logs_path)

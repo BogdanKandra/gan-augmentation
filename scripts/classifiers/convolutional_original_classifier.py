@@ -76,7 +76,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
         """ Performs the training and evaluation of this classifier, on both the train set and the validation set.
          The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric is Accuracy,
           which is appropriate for our problem, because the dataset classes are balanced.  """
-        self.create_current_run_directory()
+        self._create_current_run_directory()
         logs_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'logs'
         es_callback = EarlyStopping(monitor='val_loss', patience=5, verbose=1, restore_best_weights=True)
         tb_callback = TensorBoard(log_dir=logs_path)
