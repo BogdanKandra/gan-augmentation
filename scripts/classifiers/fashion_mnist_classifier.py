@@ -140,8 +140,9 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
     def _create_current_run_directory(self) -> None:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding
         results and sets the name of the created directory as a class field """
-        training_runs = config.CLASSIFIER_RESULTS_PATH.iterdir()
-        relevant_runs = list(filter(lambda name: str(name).startswith(self.__class__.__name__), training_runs))
+        training_runs = filter(lambda path: path.is_dir(), config.CLASSIFIER_RESULTS_PATH.iterdir())
+        training_runs = list(map(lambda path: path.stem, training_runs))
+        relevant_runs = list(filter(lambda name: name.startswith(self.__class__.__name__), training_runs))
 
         if len(relevant_runs) == 0:
             current_run_dir_name = '{} Run 1'.format(self.__class__.__name__)
