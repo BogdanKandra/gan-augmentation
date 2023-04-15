@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics as sk_metrics
 from tensorflow.keras.datasets import fashion_mnist
+from tensorflow.python.keras.callbacks import History
 from tensorflow.python.keras.optimizers import serialize
 from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflowjs.converters import save_keras_model
@@ -31,8 +32,6 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         self.preprocessed = False
         self.model = None
         self.results_subdirectory = None
-        self.__training_history = None
-        self.__test_accuracy = None
 
     @classmethod
     def __subclasshook__(cls, subclass) -> bool:
@@ -85,21 +84,23 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         else:
             LOGGER.info('>>> There is currently no model for this classifier')
 
-    def evaluate_model(self, hyperparams: Dict[str, int]) -> None:
+    def evaluate_model(self, hyperparams: Dict[str, int],
+                       training_history: History,
+                       test_accuracy: Dict[str, float]) -> None:
         """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
         the classification report and confusion matrix """
         # Plot the train and validation accuracy and loss
-        utils.plot_results(self.results_subdirectory, self.__training_history)
+        utils.plot_results(self.results_subdirectory, training_history)
 
         # Save the train and validation sets results
         results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Results.txt'
         with open(results_path, 'w') as f:
-            f.write(json.dumps(self.__training_history, indent=4))
+            f.write(json.dumps(training_history, indent=4))
 
         # Save the test set results
         results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Test Results.txt'
         with open(results_path, 'w') as f:
-            f.write(json.dumps(self.__test_accuracy, indent=4))
+            f.write(json.dumps(test_accuracy, indent=4))
 
         # Generate the classification report
         predictions = self.model.predict(x=self.X_test, batch_size=hyperparams['BATCH_SIZE'], verbose=1)
