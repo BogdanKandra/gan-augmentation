@@ -60,6 +60,15 @@ The tests directory contains unit tests for the scripts. <br><br><br>
 
 # TODO
 
+- Write project installation instructions (see other repos of mine) [???]
+    - conda create --name <env_name> python=3.11
+    - conda activate <env_name>
+    - pip install -r requirements.txt (from the project dir)
+- Switch everything from TensorFlow to PyTorch
 - Remove magic numbers
 - Write tests for the classifier scripts ???
 - Maybe create a class structure for representing the training data ?
+- Implement generator models
+- Augment dataset using generator models
+- Train classifiers on augmented datasets
+- Compare results
