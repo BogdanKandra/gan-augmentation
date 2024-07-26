@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from scripts import utils
-from typing import Dict
+from typing import Dict, List
 
 
 LOGGER = utils.get_logger(__name__)
@@ -24,17 +24,27 @@ class FashionMNISTModel(ABC):
 
     @abstractmethod
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute """
+        """ Defines the classifier / generator model structure and stores it as an instance attribute """
         raise NotImplementedError
 
     @abstractmethod
-    def train_model(self) -> None:
-        """ Performs the training and evaluation of this classifier, on both the train set and the validation set """
+    def train_model(self) -> Dict[str, List[float]]:
+        """ Defines the training parameters and runs the training loop for the model currently in memory
+        
+        Returns:
+            Dict[str, List[float]]: dictionary containing the loss values and the accuracy,
+                precision, recall and F1 score results, both on the training and validation sets
+        """
         raise NotImplementedError
 
     @abstractmethod
-    def evaluate_model(self, hyperparams: Dict[str, int]) -> None:
-        """ Evaluates the model currently in memory """
+    def evaluate_model(self) -> Dict[str, float]:
+        """ Evaluates the model currently in memory by running it on the testing set
+        
+        Returns:
+            Dict[str, float]: dictionary containing the loss value and the accuracy,
+                precision, recall and F1 score results on the testing set
+        """
         raise NotImplementedError
 
     # @abstractmethod
