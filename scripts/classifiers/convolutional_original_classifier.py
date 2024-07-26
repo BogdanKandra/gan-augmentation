@@ -58,10 +58,10 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
 
         l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 
-        self.model = Sequential(name='CNNOriginalClassifier')
-        self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
-                                  dtype=float,
-                                  name='original_image'))
+        # self.model = Sequential(name='CNNOriginalClassifier')
+        # self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
+        #                           dtype=float,
+        #                           name='original_image'))
 
         # self.model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation=relu,
         #                       kernel_initializer='he_uniform', kernel_regularizer=l2))
@@ -86,15 +86,15 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
 
         # self.model.add(Flatten())
 
-        self.model.add(Dense(units=512, activation=relu, kernel_initializer='he_uniform'))
-        self.model.add(Dropout(rate=0.2))
+        # self.model.add(Dense(units=512, activation=relu, kernel_initializer='he_uniform'))
+        # self.model.add(Dropout(rate=0.2))
 
-        self.model.add(Dense(10, activation=softmax, kernel_initializer='he_uniform'))
+        # self.model.add(Dense(10, activation=softmax, kernel_initializer='he_uniform'))
 
-        optimizer = Adam(learning_rate=0.0001, decay=0.0001 / config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'])
-        self.model.compile(optimizer=optimizer,
-                           loss=CategoricalCrossentropy(),
-                           metrics=[CategoricalAccuracy(), Precision(), Recall()])
+        # optimizer = Adam(learning_rate=0.0001, decay=0.0001 / config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'])
+        # self.model.compile(optimizer=optimizer,
+        #                    loss=CategoricalCrossentropy(),
+        #                    metrics=[CategoricalAccuracy(), Precision(), Recall()])
 
     def train_model(self) -> Dict[str, List[float]]:
         """ Defines the training parameters and runs the training loop for the model currently in memory.
