@@ -9,8 +9,7 @@ from scripts import config
 class SNN(nn.Module):
     def __init__(self, dataset: str) -> None:
         """ Class representing a shallow neural network, consisting of the
-        Input and Output layers, and a single hidden layer, with a vanilla SGD
-        as optimizer
+        Input and Output layers, and a single hidden layer
         
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -36,6 +35,9 @@ class SNN(nn.Module):
         )
     
     def forward(self, x: Tensor) -> Tensor:
-        x = self.classifier(x)  # (1*28*28) -> (256) -> (10) / (3*32*32) -> (256) -> (10)
+        """ Tensor flow through the network for each dataset:
+        Fashion-MNIST: (1,28,28) -> (1*28*28) -> (256) -> (10)
+        CIFAR-10: (3,32,32) -> (3*32*32) -> (256) -> (10) """
+        x = self.classifier(x)
 
         return x

@@ -1,5 +1,3 @@
-from math import prod
-
 import torch.nn as nn
 from torch import Tensor
 
@@ -9,8 +7,8 @@ from scripts import config
 class CNN(nn.Module):
     def __init__(self, dataset: str) -> None:
         """ Class representing a convolutional neural network, consisting of 3
-        convolutional blocks with pooling, dropout and L2 regularization,
-        followed by 2 dense layers with dropout and Adam as optimizer
+        convolutional blocks (with pooling, dropout and L2 regularization),
+        followed by a decoder block (composed of 2 linear layers with dropout)
 
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -20,9 +18,11 @@ class CNN(nn.Module):
         match dataset:
             case config.DatasetType.FASHION_MNIST.name:
                 self.in_channels = config.FASHION_MNIST_SHAPE[0]
+                self.decoder_features = 256 * (config.FASHION_MNIST_SHAPE[1] // 8) ** 2
                 self.out_features = len(config.FASHION_MNIST_CLASS_LABELS)
             case config.DatasetType.CIFAR_10.name:
                 self.in_channels = config.CIFAR_10_SHAPE[0]
+                self.decoder_features = 256 * (config.CIFAR_10_SHAPE[1] // 8) ** 2
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:
                 raise ValueError('Unavailable dataset type')
@@ -56,26 +56,22 @@ class CNN(nn.Module):
 
         self.decoder = nn.Sequential(
             nn.Flatten(),
-            # nn.Linear(in_features=prod([256, 4, 4]), out_features=256),
-            # nn.ReLU(),
-            # nn.Dropout(p=0.5),
-            # nn.Linear(in_features=256, out_features=self.out_features),
-            # nn.Softmax()
+            nn.Linear(in_features=self.decoder_features, out_features=512),
+            nn.ReLU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(in_features=512, out_features=self.out_features),
+            nn.Softmax()
         )
 
-        # self.classifier = nn.Sequential(
-        #     nn.Flatten(),
-        #     nn.Linear(in_features=self.in_features, out_features=256),
-        #     nn.ReLU(),
-        #     nn.Linear(in_features=256, out_features=64),
-        #     nn.ReLU(),
-        #     nn.Linear(in_features=64, out_features=16),
-        #     nn.ReLU(),
-        #     nn.Linear(in_features=16, out_features=self.out_features),
-        #     nn.Softmax()
-        # )
-    
     def forward(self, x: Tensor) -> Tensor:
-        x = self.classifier(x)  # (1*28*28) -> (256) -> (64) -> (16) -> (10) / (3*32*32) -> (256) -> (64) -> (16) -> (10)
+        """ Tensor flow through the network for each dataset:
+        Fashion-MNIST: (1,28,28) -> (64,14,14) -> (128,7,7) -> (256,3,3) ->
+                       (256*3*3) -> (512) -> (10)
+        CIFAR-10: (3,32,32) -> (64,16,16) -> (128,8,8) -> (256,4,4) ->
+                  (256*4*4) -> (512) -> (10) """
+        x = self.conv_block_1(x)  # (1,28,28) -> (64,14,14)  /  (3,32,32) -> (64,16,16)
+        x = self.conv_block_2(x)  # (64,14,14) -> (128,7,7)  /  (64,16,16) -> (128,8,8)
+        x = self.conv_block_3(x)  # (128,7,7) -> (256,3,3)   /  (128,8,8) -> (256,4,4)
+        x = self.decoder(x)       # (256,3,3) -> (256*3*3) -> (512) -> (10)  /  (256,4,4) -> (256*4*4) -> (512) -> (10)
 
         return x

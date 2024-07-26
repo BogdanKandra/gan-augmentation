@@ -9,8 +9,7 @@ from scripts import config
 class DNN(nn.Module):
     def __init__(self, dataset: str) -> None:
         """ Class representing a deep neural network, consisting of the
-        Input and Output layers and 3 hidden layers in between, with a vanilla
-        SGD as optimizer
+        Input and Output layers, and 3 hidden layers in between
 
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -40,6 +39,9 @@ class DNN(nn.Module):
         )
     
     def forward(self, x: Tensor) -> Tensor:
-        x = self.classifier(x)  # (1*28*28) -> (256) -> (64) -> (16) -> (10) / (3*32*32) -> (256) -> (64) -> (16) -> (10)
+        """ Tensor flow through the network for each dataset:
+        Fashion-MNIST: (1,28,28) -> (1*28*28) -> (256) -> (64) -> (16) -> (10)
+        CIFAR-10: (3,32,32) -> (3*32*32) -> (256) -> (64) -> (16) -> (10) """
+        x = self.classifier(x)
 
         return x
