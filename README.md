@@ -20,6 +20,8 @@ Studying the utility of GANs in augmenting datasets used for classification prob
 
 ## TODO
 - Replace TensorFlow with PyTorch
+- Update the call to torchinfo.summary()
+
 - Add export to ONNX
 - Add stuff learned from Krish Naik video:
     - Integrate MlFlow
