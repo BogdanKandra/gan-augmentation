@@ -2,7 +2,7 @@ import json
 from abc import ABC
 from math import sqrt
 from random import randrange
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,22 +13,41 @@ from tensorflow.python.keras.optimizers import serialize
 from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflowjs.converters import save_keras_model
 
+from torchinfo import summary
+from torchvision.datasets import CIFAR10, FashionMNIST
+from torchvision.transforms import ToTensor
+
 from scripts import config, utils
+from scripts.config import DatasetType
 from scripts.interfaces import FashionMNISTModel
+
 
 LOGGER = utils.get_logger(__name__)
 
 
 class FashionMNISTClassifier(FashionMNISTModel, ABC):
-    """ Abstract class representing the blueprint all classifiers on the Fashion-MNIST dataset must follow """
-    def __init__(self) -> None:
-        """ Loads the Fashion-MNIST dataset and stores it in instance attributes """
-        (self.X_train, self.y_train), (self.X_test, self.y_test) = fashion_mnist.load_data()
+    """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
+    def __init__(self, dataset: DatasetType) -> None:
+        """ Loads the specified dataset and stores it in instance attributes """
+        self.dataset = dataset
+
+        match self.dataset:
+            case config.DatasetType.FASHION_MNIST:
+                train_dataset = FashionMNIST(root='data', train=True, download=True)
+                test_dataset = FashionMNIST(root='data', train=False, download=True)
+            case config.DatasetType.CIFAR_10:
+                train_dataset = CIFAR10(root='data', train=True, download=True)
+                test_dataset = CIFAR10(root='data', train=False, download=True)
+
+        self.X_train, self.y_train = train_dataset.data, train_dataset.targets
+        self.X_test, self.y_test = test_dataset.data, test_dataset.targets
+
         validation_size = int(config.VALID_SET_PERCENTAGE * len(self.X_train))
         self.X_valid = self.X_train[: validation_size]
         self.y_valid = self.y_train[: validation_size]
         self.X_train = self.X_train[validation_size:]
         self.y_train = self.y_train[validation_size:]
+
         self.preprocessed = False
         self.model = None
         self.results_subdirectory = None
@@ -37,24 +56,27 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
     def __subclasshook__(cls, subclass) -> bool:
         return (hasattr(subclass, 'preprocess_dataset') and callable(subclass.preprocess_dataset) and
                 hasattr(subclass, 'build_model') and callable(subclass.build_model) and
-                hasattr(subclass, 'train_model') and callable(subclass.train_model) or
-                NotImplemented)
+                hasattr(subclass, 'train_model') and callable(subclass.train_model) and
+                hasattr(subclass, 'evaluate_model') and callable(subclass.evaluate_model))
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
-        LOGGER.info('>>> Train Set Shape: X_train.shape={}, y_train.shape={}'.format(self.X_train.shape,
-                                                                                     self.y_train.shape))
-        LOGGER.info('>>> Validation Set Shape: X_valid.shape={}, y_valid.shape={}'.format(self.X_valid.shape,
-                                                                                          self.y_valid.shape))
-        LOGGER.info('>>> Test Set Shape: X_test.shape={}, y_test.shape={}'.format(self.X_test.shape,
-                                                                                  self.y_test.shape))
+        LOGGER.info(f'>>> Train Set Shape: X_train.shape={self.X_train.shape}, y_train.shape={self.y_train.shape}')
+        LOGGER.info(f'>>> Validation Set Shape: X_valid.shape={self.X_valid.shape}, y_valid.shape={self.y_valid.shape}')
+        LOGGER.info(f'>>> Test Set Shape: X_test.shape={self.X_test.shape}, y_test.shape={self.y_test.shape}')
 
-    def display_dataset_sample(self, num_samples: int = 9) -> None:
-        """ Displays some images from the dataset currently in memory """
+    def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
+        """ Displays some images from the dataset currently in memory.
+        Maximum number of images to be displayed is min(100, batch size)
+
+        Arguments:
+            num_samples (int, optional): the number of images to be displayed
+            cmap (Colormap, optional): the colormap to be used for displaying the images
+        """
         # Parameter validation
         max_samples = min(self.X_train.shape[0], 100)
         if num_samples > max_samples:
-            raise ValueError('Maximum count of images to be displayed is {}'.format(max_samples))
+            raise ValueError(f'Maximum count of images to be displayed is {max_samples}')
 
         # Compute the plotting grid size as the next perfect square from num_samples
         if utils.is_perfect_square(num_samples):
@@ -71,36 +93,66 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
 
         for i in indices:
             plt.subplot(grid_size, grid_size, idx)
-            plt.imshow(self.X_train[i], cmap=plt.get_cmap('gray'))
+            plt.imshow(self.X_train[i], cmap=cmap)
             plt.axis('off')
             idx += 1
 
         plt.show()
 
     def display_model(self) -> None:
-        """ Logs the summary of the model currently in memory """
+        """ Logs information about the model currently in memory """
         if self.model is not None:
-            self.model.summary()
+            # self.model.summary()
+            LOGGER.info(str(self.model))
+            LOGGER.info(
+                summary(
+                    self.model,
+                    # input_size=(
+                    #     constants.BATCH_SIZE,
+                    #     constants.NUM_CHANNELS,
+                    #     constants.IMAGE_HEIGHT,
+                    #     constants.IMAGE_WIDTH,
+                    # ),
+                    # col_names=["input_size", "output_size", "num_params", "params_percent", "kernel_size", "mult_adds", "trainable"],
+                    # verbose=1
+                )
+            )
         else:
             LOGGER.info('>>> There is currently no model for this classifier')
 
-    def evaluate_model(self, hyperparams: Dict[str, int],
-                       training_history: History,
-                       test_accuracy: Dict[str, float]) -> None:
-        """ Evaluates the model currently in memory by plotting training and validation accuracy and loss and generating
-        the classification report and confusion matrix """
+    def save_results(
+        self,
+        hyperparams: Dict[str, int],
+        training_results: Dict[str, List[float]],
+        testing_results: Dict[str, float]
+    ) -> None:
+        """ Evaluates the model currently in memory by plotting training and validation
+        accuracy and loss and generating the classification report and confusion matrix
+
+        Arguments:
+            results_dir (Path): the path to where the training results will be saved
+
+            training_results (Dict[str, List[float]]): dictionary containing the loss values and
+                the accuracy, precision, recall and F1 score results, both on the training and
+                validation sets
+
+            test_results (Dict[str, float]): dictionary containing the loss, accuracy, precision,
+                recall and F1 score results on the test set
+        """
+        self._create_current_run_directory()
+
         # Plot the train and validation accuracy and loss
-        utils.plot_results(self.results_subdirectory, training_history)
+        utils.plot_results(self.results_subdirectory, training_results)
 
         # Save the train and validation sets results
         results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Results.txt'
         with open(results_path, 'w') as f:
-            f.write(json.dumps(training_history, indent=4))
+            f.write(json.dumps(training_results, indent=4))
 
-        # Save the test set results
-        results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Test Results.txt'
+        # Save the testing set results
+        results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Testing Results.txt'
         with open(results_path, 'w') as f:
-            f.write(json.dumps(test_accuracy, indent=4))
+            f.write(json.dumps(testing_results, indent=4))
 
         # Generate the classification report
         predictions = self.model.predict(x=self.X_test, batch_size=hyperparams['BATCH_SIZE'], verbose=1)
@@ -145,11 +197,11 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         relevant_runs = list(filter(lambda name: name.startswith(self.__class__.__name__), training_runs))
 
         if len(relevant_runs) == 0:
-            current_run_dir_name = '{} Run 1'.format(self.__class__.__name__)
+            current_run_dir_name = f"{self.__class__.__name__} Run 1"
         else:
-            run_numbers = [name.split(' ')[-1] for name in relevant_runs]
+            run_numbers = [name.split(" ")[-1] for name in relevant_runs]
             latest_run = max(list(map(int, run_numbers)))
-            current_run_dir_name = '{} Run {}'.format(self.__class__.__name__, latest_run + 1)
+            current_run_dir_name = f"{self.__class__.__name__} Run {latest_run + 1}"
 
         current_run_dir_path = config.CLASSIFIER_RESULTS_PATH / current_run_dir_name
         current_run_dir_path.mkdir()
