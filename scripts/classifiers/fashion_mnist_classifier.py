@@ -30,15 +30,17 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
     def __init__(self, dataset: DatasetType) -> None:
         """ Loads the specified dataset and stores it in instance attributes """
-        self.dataset = dataset
+        self.dataset_type = dataset
 
-        match self.dataset:
+        match self.dataset_type:
             case config.DatasetType.FASHION_MNIST:
                 train_dataset = FashionMNIST(root='data', train=True, download=True)
                 test_dataset = FashionMNIST(root='data', train=False, download=True)
+                self.dataset_shape = config.FASHION_MNIST_SHAPE
             case config.DatasetType.CIFAR_10:
                 train_dataset = CIFAR10(root='data', train=True, download=True)
                 test_dataset = CIFAR10(root='data', train=False, download=True)
+                self.dataset_shape = config.CIFAR_10_SHAPE
 
         self.X_train, self.y_train = train_dataset.data, train_dataset.targets
         self.X_test, self.y_test = test_dataset.data, test_dataset.targets
@@ -109,20 +111,21 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
     def display_model(self) -> None:
         """ Logs information about the model currently in memory """
         if self.model is not None:
-            # self.model.summary()
-            LOGGER.info(str(self.model))
-            LOGGER.info(
-                summary(
-                    self.model,
-                    # input_size=(
-                    #     constants.BATCH_SIZE,
-                    #     constants.NUM_CHANNELS,
-                    #     constants.IMAGE_HEIGHT,
-                    #     constants.IMAGE_WIDTH,
-                    # ),
-                    # col_names=["input_size", "output_size", "num_params", "params_percent", "kernel_size", "mult_adds", "trainable"],
-                    # verbose=1
-                )
+            # Pass the channel size as 3 when fine tuning a classifier
+            # pretrained on 3-channel images, on a grayscale dataset
+            input_shape = self.dataset_shape
+            if self.dataset_type == config.DatasetType.FASHION_MNIST and self.X_train.shape[3] == 3:
+                input_shape = (3, self.dataset_shape[1], self.dataset_shape[2])
+
+            LOGGER.info('>>> Network components:')
+            LOGGER.info(self.model)
+            LOGGER.info('>>> Torchinfo summary:')
+            summary(
+                self.model,
+                input_size=(1, *input_shape),
+                col_names=["input_size", "output_size", "num_params",
+                            "params_percent", "kernel_size", "mult_adds", "trainable"],
+                verbose=1
             )
         else:
             LOGGER.info('>>> There is currently no model for this classifier')
