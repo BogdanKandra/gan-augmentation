@@ -36,16 +36,25 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
             # self.X_train = self.X_train.reshape((*self.X_train.shape, 1)).to(float) / 255.0
             # self.X_valid = self.X_valid.reshape((*self.X_valid.shape, 1)).to(float) / 255.0
             # self.X_test = self.X_test.reshape((*self.X_test.shape, 1)).to(float) / 255.0
-            self.X_train = torch.unsqueeze(self.X_train, dim=3).to(float) / 255.0
-            self.X_valid = torch.unsqueeze(self.X_valid, dim=3).to(float) / 255.0
-            self.X_test = torch.unsqueeze(self.X_test, dim=3).to(float) / 255.0
+
+            # If the loaded dataset is grayscale, add the channel dimension
+            if len(self.X_train.shape) == 3:
+                self.X_train = torch.unsqueeze(self.X_train, dim=3)
+                self.X_valid = torch.unsqueeze(self.X_valid, dim=3)
+                self.X_test = torch.unsqueeze(self.X_test, dim=3)
+
+            # Convert to float and rescale to [0, 1]
+            self.X_train = self.X_train.to(float) / 255.0
+            self.X_valid = self.X_valid.to(float) / 255.0
+            self.X_test = self.X_test.to(float) / 255.0
 
             # self.y_train = to_categorical(self.y_train)
             # self.y_valid = to_categorical(self.y_valid)
             # self.y_test = to_categorical(self.y_test)
-            self.y_train = F.one_hot(self.y_train, num_classes=len(config.CLASS_LABELS)).to(float)
-            self.y_valid = F.one_hot(self.y_valid, num_classes=len(config.CLASS_LABELS)).to(float)
-            self.y_test = F.one_hot(self.y_test, num_classes=len(config.CLASS_LABELS)).to(float)
+            dataset_class_labels = getattr(config, self.dataset.name + '_CLASS_LABELS')
+            self.y_train = F.one_hot(self.y_train, num_classes=len(dataset_class_labels)).to(float)
+            self.y_valid = F.one_hot(self.y_valid, num_classes=len(dataset_class_labels)).to(float)
+            self.y_test = F.one_hot(self.y_test, num_classes=len(dataset_class_labels)).to(float)
 
             self.preprocessed = True
 
@@ -56,7 +65,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
          also implemented """
         self.model = CNN(self.dataset)
 
-        l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
+        # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 
         # self.model = Sequential(name='CNNOriginalClassifier')
         # self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),

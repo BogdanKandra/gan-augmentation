@@ -22,7 +22,7 @@ import torch.nn.functional as F
 
 from scripts import config, utils
 from scripts.classifiers import FashionMNISTClassifier
-import scripts.config as config
+from scripts.models.efficient_net import EfficientNet
 
 LOGGER = utils.get_logger(__name__)
 
@@ -37,51 +37,59 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
             # self.X_train = np.expand_dims(self.X_train, axis=3).astype(float)
             # self.X_valid = np.expand_dims(self.X_valid, axis=3).astype(float)
             # self.X_test = np.expand_dims(self.X_test, axis=3).astype(float)
-            self.X_train = torch.unsqueeze(self.X_train, dim=3).to(float)
-            self.X_valid = torch.unsqueeze(self.X_valid, dim=3).to(float)
-            self.X_test = torch.unsqueeze(self.X_test, dim=3).to(float)
 
-            # The input images expected by the EfficientNet models must have 3 channels, so we convert the data
-            # self.X_train = np.concatenate([self.X_train] * 3, axis=3)
-            # self.X_valid = np.concatenate([self.X_valid] * 3, axis=3)
-            # self.X_test = np.concatenate([self.X_test] * 3, axis=3)
-            self.X_train = torch.cat([self.X_train] * 3, dim=3)
-            self.X_valid = torch.cat([self.X_valid] * 3, dim=3)
-            self.X_test = torch.cat([self.X_test] * 3, dim=3)
+            # If the loaded dataset is grayscale, add the channel dimension
+            if len(self.X_train.shape) == 3:
+                self.X_train = torch.unsqueeze(self.X_train, dim=3)
+                self.X_valid = torch.unsqueeze(self.X_valid, dim=3)
+                self.X_test = torch.unsqueeze(self.X_test, dim=3)
+
+                # The input images expected by the EfficientNet models must have 3 channels,
+                # so we repeat the image 3 times
+                self.X_train = torch.cat([self.X_train] * 3, dim=3)
+                self.X_valid = torch.cat([self.X_valid] * 3, dim=3)
+                self.X_test = torch.cat([self.X_test] * 3, dim=3)
+
+            # Convert to float and rescale to [0, 1]
+            self.X_train = self.X_train.to(float) / 255.0
+            self.X_valid = self.X_valid.to(float) / 255.0
+            self.X_test = self.X_test.to(float) / 255.0
 
             # self.y_train = to_categorical(self.y_train)
             # self.y_valid = to_categorical(self.y_valid)
             # self.y_test = to_categorical(self.y_test)
-            self.y_train = F.one_hot(self.y_train, num_classes=len(config.CLASS_LABELS)).to(float)
-            self.y_valid = F.one_hot(self.y_valid, num_classes=len(config.CLASS_LABELS)).to(float)
-            self.y_test = F.one_hot(self.y_test, num_classes=len(config.CLASS_LABELS)).to(float)
+            dataset_class_labels = getattr(config, self.dataset.name + '_CLASS_LABELS')
+            self.y_train = F.one_hot(self.y_train, num_classes=len(dataset_class_labels)).to(float)
+            self.y_valid = F.one_hot(self.y_valid, num_classes=len(dataset_class_labels)).to(float)
+            self.y_test = F.one_hot(self.y_test, num_classes=len(dataset_class_labels)).to(float)
 
             self.preprocessed = True
 
     def build_model(self) -> None:
         """ Defines the classifier model structure and stores it as an instance attribute. The model used here is the
-        headless EfficientNetB3 pretrained network with a new classifier head consisting of Global Average Pooling,
-         Dropout and Softmax. Early stopping and TensorBoard callbacks are also implemented """
-        feature_extractor = EfficientNetB0(include_top=False, weights='imagenet')
-        feature_extractor.trainable = False
+        headless EfficientNetB0 pretrained network with a new classifier head consisting of Global Average Pooling,
+        Dropout and Softmax. Early stopping and TensorBoard callbacks are also implemented """
+        self.model = EfficientNet(self.dataset)
 
-        self.model = Sequential(name='EfficientNetOriginalClassifier')
-        self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
-                                  dtype=float,
-                                  name='original_image'))
-        self.model.add(Resizing(config.EFFICIENT_NET_SIZE, config.EFFICIENT_NET_SIZE))
+        # feature_extractor = EfficientNetB0(include_top=False, weights='imagenet')
+        # feature_extractor.trainable = False
+        # self.model = Sequential(name='EfficientNetOriginalClassifier')
+        # self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),
+        #                           dtype=float,
+        #                           name='original_image'))
+        # self.model.add(Resizing(config.EFFICIENT_NET_SIZE, config.EFFICIENT_NET_SIZE))
 
-        self.model.add(feature_extractor)
-        self.model.add(GlobalAveragePooling2D())
-        self.model.add(BatchNormalization())
-        self.model.add(Dropout(rate=0.2))
+        # self.model.add(feature_extractor)
+        # self.model.add(GlobalAveragePooling2D())
+        # self.model.add(BatchNormalization())
+        # self.model.add(Dropout(rate=0.2))
 
-        self.model.add(Dense(10, activation=softmax, kernel_initializer='he_uniform'))
+        # self.model.add(Dense(10, activation=softmax, kernel_initializer='he_uniform'))
 
-        optimizer = Adam(learning_rate=0.001, decay=0.01 / config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS'])
-        self.model.compile(optimizer=optimizer,
-                           loss=CategoricalCrossentropy(),
-                           metrics=[CategoricalAccuracy(), Precision(), Recall()])
+        # optimizer = Adam(learning_rate=0.001, decay=0.01 / config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS'])
+        # self.model.compile(optimizer=optimizer,
+        #                    loss=CategoricalCrossentropy(),
+        #                    metrics=[CategoricalAccuracy(), Precision(), Recall()])
 
     def train_model(self) -> Dict[str, List[float]]:
         """ Defines the training parameters and runs the training loop for the model currently in memory.
