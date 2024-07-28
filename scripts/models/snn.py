@@ -17,14 +17,14 @@ class SNN(nn.Module):
 
         # Compute the input and output feature sizes based on the specified dataset
         match dataset:
-            case config.DatasetType.FASHION_MNIST.name:
+            case config.DatasetType.FASHION_MNIST:
                 self.in_features = prod(config.FASHION_MNIST_SHAPE)
                 self.out_features = len(config.FASHION_MNIST_CLASS_LABELS)
-            case config.DatasetType.CIFAR_10.name:
+            case config.DatasetType.CIFAR_10:
                 self.in_features = prod(config.CIFAR_10_SHAPE)
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:
-                raise ValueError('Unavailable dataset type')
+                raise ValueError('Unimplemented dataset type')
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
