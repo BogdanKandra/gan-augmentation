@@ -13,6 +13,7 @@ from tensorflow.python.keras.optimizers import serialize
 from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflowjs.converters import save_keras_model
 
+import torch
 from torchinfo import summary
 from torchvision.datasets import CIFAR10, FashionMNIST
 from torchvision.transforms import ToTensor
@@ -41,6 +42,12 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
 
         self.X_train, self.y_train = train_dataset.data, train_dataset.targets
         self.X_test, self.y_test = test_dataset.data, test_dataset.targets
+
+        if type(self.X_train) is np.ndarray:
+            self.X_train = torch.from_numpy(self.X_train)
+            self.X_test = torch.from_numpy(self.X_test)
+            self.y_train = torch.tensor(self.y_train)
+            self.y_test = torch.tensor(self.y_test)
 
         validation_size = int(config.VALID_SET_PERCENTAGE * len(self.X_train))
         self.X_valid = self.X_train[: validation_size]
