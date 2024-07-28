@@ -40,8 +40,10 @@ GENERATOR_RESULTS_PATH = RESULTS_PATH / 'generators'
 
 
 ### Datasets labels and sizes
-FASHION_MNIST_CLASS_LABELS = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle Boot']
-CIFAR_10_CLASS_LABELS = ['Airplane', 'Automobile', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
+FASHION_MNIST_CLASS_LABELS = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
+                              'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle Boot']
+CIFAR_10_CLASS_LABELS = ['Airplane', 'Automobile', 'Bird', 'Cat', 'Deer',
+                         'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
 FASHION_MNIST_SHAPE = (1, 28, 28)
 CIFAR_10_SHAPE = (3, 32, 32)
 
