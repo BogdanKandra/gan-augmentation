@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import Dict
+
 from scripts import utils
 from scripts.interfaces.fashion_mnist_model import FashionMNISTModel
 
