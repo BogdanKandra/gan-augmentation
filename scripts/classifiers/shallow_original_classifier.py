@@ -24,10 +24,6 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
     def preprocess_dataset(self) -> None:
         """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
         if not self.preprocessed:
-            # self.X_train = self.X_train.reshape((*self.X_train.shape, 1)).to(float) / 255.0
-            # self.X_valid = self.X_valid.reshape((*self.X_valid.shape, 1)).to(float) / 255.0
-            # self.X_test = self.X_test.reshape((*self.X_test.shape, 1)).to(float) / 255.0
-
             # If the loaded dataset is grayscale, add the channel dimension
             if len(self.X_train.shape) == 3:
                 self.X_train = torch.unsqueeze(self.X_train, dim=3)
@@ -39,10 +35,8 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
             self.X_valid = self.X_valid.to(float) / 255.0
             self.X_test = self.X_test.to(float) / 255.0
 
-            # self.y_train = to_categorical(self.y_train)
-            # self.y_valid = to_categorical(self.y_valid)
-            # self.y_test = to_categorical(self.y_test)
-            dataset_class_labels = getattr(config, self.dataset.name + '_CLASS_LABELS')
+            # Encode the labels as one-hot vectors
+            dataset_class_labels = getattr(config, self.dataset_type.name + '_CLASS_LABELS')
             self.y_train = F.one_hot(self.y_train, num_classes=len(dataset_class_labels)).to(float)
             self.y_valid = F.one_hot(self.y_valid, num_classes=len(dataset_class_labels)).to(float)
             self.y_test = F.one_hot(self.y_test, num_classes=len(dataset_class_labels)).to(float)
@@ -52,7 +46,7 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
     def build_model(self) -> None:
         """ Defines the classifier model structure and stores it as an instance attribute. The model used here is a
          shallow neural network, consisting only of the Input and Output layers, with a vanilla SGD as optimizer """
-        self.model = SNN(self.dataset)
+        self.model = SNN(self.dataset_type)
 
         # self.model = Sequential(name='SNNOriginalClassifier')
         # self.model.add(InputLayer(input_shape=(self.X_train.shape[1], self.X_train.shape[2], self.X_train.shape[3]),

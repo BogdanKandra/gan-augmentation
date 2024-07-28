@@ -33,11 +33,6 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
     def preprocess_dataset(self) -> None:
         """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
         if not self.preprocessed:
-            # Preprocess input
-            # self.X_train = np.expand_dims(self.X_train, axis=3).astype(float)
-            # self.X_valid = np.expand_dims(self.X_valid, axis=3).astype(float)
-            # self.X_test = np.expand_dims(self.X_test, axis=3).astype(float)
-
             # If the loaded dataset is grayscale, add the channel dimension
             if len(self.X_train.shape) == 3:
                 self.X_train = torch.unsqueeze(self.X_train, dim=3)
@@ -55,10 +50,8 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
             self.X_valid = self.X_valid.to(float) / 255.0
             self.X_test = self.X_test.to(float) / 255.0
 
-            # self.y_train = to_categorical(self.y_train)
-            # self.y_valid = to_categorical(self.y_valid)
-            # self.y_test = to_categorical(self.y_test)
-            dataset_class_labels = getattr(config, self.dataset.name + '_CLASS_LABELS')
+            # Encode the labels as one-hot vectors
+            dataset_class_labels = getattr(config, self.dataset_type.name + '_CLASS_LABELS')
             self.y_train = F.one_hot(self.y_train, num_classes=len(dataset_class_labels)).to(float)
             self.y_valid = F.one_hot(self.y_valid, num_classes=len(dataset_class_labels)).to(float)
             self.y_test = F.one_hot(self.y_test, num_classes=len(dataset_class_labels)).to(float)
@@ -69,7 +62,7 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
         """ Defines the classifier model structure and stores it as an instance attribute. The model used here is the
         headless EfficientNetB0 pretrained network with a new classifier head consisting of Global Average Pooling,
         Dropout and Softmax. Early stopping and TensorBoard callbacks are also implemented """
-        self.model = EfficientNet(self.dataset)
+        self.model = EfficientNet(self.dataset_type)
 
         # feature_extractor = EfficientNetB0(include_top=False, weights='imagenet')
         # feature_extractor.trainable = False
