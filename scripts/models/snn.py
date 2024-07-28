@@ -31,7 +31,7 @@ class SNN(nn.Module):
             nn.Linear(in_features=self.in_features, out_features=256),
             nn.ReLU(),
             nn.Linear(in_features=256, out_features=self.out_features),
-            nn.Softmax()
+            nn.Softmax(dim=0)
         )
     
     def forward(self, x: Tensor) -> Tensor:

@@ -60,7 +60,7 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(in_features=512, out_features=self.out_features),
-            nn.Softmax()
+            nn.Softmax(dim=0)
         )
 
     def forward(self, x: Tensor) -> Tensor:

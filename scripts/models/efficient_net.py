@@ -30,7 +30,8 @@ class EfficientNet(nn.Module):
 
         self.feature_extractor.classifier = nn.Sequential(
             nn.Dropout(p=0.2, inplace=True),
-            nn.Linear(in_features=1280, out_features=self.out_features)
+            nn.Linear(in_features=1280, out_features=self.out_features),
+            nn.Softmax(dim=0)
         )
 
     def forward(self, x: Tensor) -> Tensor:
