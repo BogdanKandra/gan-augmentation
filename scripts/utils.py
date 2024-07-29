@@ -2,7 +2,7 @@ import itertools
 import logging
 import sys
 from math import sqrt
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -27,10 +27,10 @@ def is_perfect_square(number: int) -> bool:
     return int(sqrt(number)) ** 2 == number
 
 
-def plot_results(subdirectory_name: str, history: dict) -> None:
+def plot_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
     """ Plots the training and validation accuracy and loss """
-    training_accuracy = history['categorical_accuracy']
-    validation_accuracy = history['val_categorical_accuracy']
+    training_accuracy = history['accuracy']
+    validation_accuracy = history['val_accuracy']
     training_loss = history['loss']
     validation_loss = history['val_loss']
 
