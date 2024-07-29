@@ -7,10 +7,6 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics as sk_metrics
-from tensorflow.keras.datasets import fashion_mnist
-from tensorflow.python.keras.callbacks import History
-from tensorflow.python.keras.optimizers import serialize
-from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflowjs.converters import save_keras_model
 
 import torch
@@ -37,10 +33,12 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
                 train_dataset = FashionMNIST(root='data', train=True, download=True)
                 test_dataset = FashionMNIST(root='data', train=False, download=True)
                 self.dataset_shape = config.FASHION_MNIST_SHAPE
+                self.class_labels = config.FASHION_MNIST_CLASS_LABELS
             case config.DatasetType.CIFAR_10:
                 train_dataset = CIFAR10(root='data', train=True, download=True)
                 test_dataset = CIFAR10(root='data', train=False, download=True)
                 self.dataset_shape = config.CIFAR_10_SHAPE
+                self.class_labels = config.CIFAR_10_CLASS_LABELS
 
         self.X_train, self.y_train = train_dataset.data, train_dataset.targets
         self.X_test, self.y_test = test_dataset.data, test_dataset.targets
@@ -71,8 +69,11 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
         LOGGER.info(f'>>> Train Set Shape: X_train.shape={self.X_train.shape}, y_train.shape={self.y_train.shape}')
+        LOGGER.info(f'>>> Train Set dtype: X_train.shape={self.X_train.dtype}, y_train.dtype={self.y_train.dtype}')
         LOGGER.info(f'>>> Validation Set Shape: X_valid.shape={self.X_valid.shape}, y_valid.shape={self.y_valid.shape}')
+        LOGGER.info(f'>>> Validation Set dtype: X_valid.dtype={self.X_valid.dtype}, y_valid.dtype={self.y_valid.dtype}')
         LOGGER.info(f'>>> Test Set Shape: X_test.shape={self.X_test.shape}, y_test.shape={self.y_test.shape}')
+        LOGGER.info(f'>>> Test Set dtype: X_test.shape={self.X_test.dtype}, y_test.dtype={self.y_test.dtype}')
 
     def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
         """ Displays some images from the dataset currently in memory.
@@ -164,35 +165,37 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         with open(results_path, 'w') as f:
             f.write(json.dumps(testing_results, indent=4))
 
-        # Generate the classification report
-        predictions = self.model.predict(x=self.X_test, batch_size=hyperparams['BATCH_SIZE'], verbose=1)
-        y_pred = np.argmax(predictions, axis=1)
-        y_pred_categorical = to_categorical(y_pred)
+        # # Generate the classification report
+        # predictions = self.model(self.X_test)
+        # y_pred = np.argmax(predictions, axis=1)
+        # y_pred_categorical = to_categorical(y_pred)
 
-        report = sk_metrics.classification_report(self.y_test, y_pred_categorical, target_names=config.CLASS_LABELS)
-        report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
-        with open(report_path, 'w') as f:
-            f.write(report)
+        # report = sk_metrics.classification_report(self.y_test, y_pred_categorical, target_names=self.class_labels)
+        # report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
+        # with open(report_path, 'w') as f:
+        #     f.write(report)
 
-        # Generate the confusion matrix
-        self.y_test = np.argmax(self.y_test, axis=1)
-        cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(10)))
-        utils.plot_confusion_matrix(cm, self.results_subdirectory, config.CLASS_LABELS)
+        # # Generate the confusion matrix
+        # self.y_test = np.argmax(self.y_test, axis=1)
+        # cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(10)))
+        # utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
 
-        # Generate a file containing model information and parameters
-        training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Information.txt'
-        try:
-            model_str = json.loads(self.model.to_json())
-        except NotImplementedError:
-            model_str = 'N/A'
-        training_info = {
-            'batch_size': hyperparams['BATCH_SIZE'],
-            'num_epochs': hyperparams['NUM_EPOCHS'],
-            'model': model_str,
-            'optimizer': str(serialize(self.model.optimizer))
-        }
-        with open(training_info_path, 'w') as f:
-            f.write(json.dumps(training_info, indent=4))
+        # # Generate a file containing model information and parameters
+        # training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Information.txt'
+        # try:
+        #     model_str = json.loads(self.model.to_json())
+        # except NotImplementedError:
+        #     model_str = 'N/A'
+        # training_info = {
+        #     'batch_size': hyperparams['BATCH_SIZE'],
+        #     'early_stopping_tolerance': hyperparams['EARLY_STOPPING_TOLERANCE'],
+        #     'learning_rate': hyperparams['LEARNING_RATE'],
+        #     'num_epochs': hyperparams['NUM_EPOCHS'],
+        #     'model': model_str,
+        #     'optimizer': str(serialize(self.model.optimizer))
+        # }
+        # with open(training_info_path, 'w') as f:
+        #     f.write(json.dumps(training_info, indent=4))
 
     def export_model(self) -> None:
         """ Exports the model currently in memory in Tensorflow.js format """
