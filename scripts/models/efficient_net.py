@@ -17,9 +17,9 @@ class EfficientNet(nn.Module):
 
         # Compute the input and output feature sizes based on the specified dataset
         match dataset:
-            case config.DatasetType.FASHION_MNIST:
+            case config.ClassifierDataset.FASHION_MNIST:
                 self.out_features = len(config.FASHION_MNIST_CLASS_LABELS)
-            case config.DatasetType.CIFAR_10:
+            case config.ClassifierDataset.CIFAR_10:
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:
                 raise ValueError('Unimplemented dataset type')
