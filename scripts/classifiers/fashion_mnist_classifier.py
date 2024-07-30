@@ -7,15 +7,12 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics as sk_metrics
-from tensorflowjs.converters import save_keras_model
-
 import torch
 from torchinfo import summary
 from torchvision.datasets import CIFAR10, FashionMNIST
-from torchvision.transforms import ToTensor
 
 from scripts import config, utils
-from scripts.config import DatasetType
+from scripts.config import ClassifierDataset
 from scripts.interfaces import FashionMNISTModel
 
 
@@ -24,17 +21,17 @@ LOGGER = utils.get_logger(__name__)
 
 class FashionMNISTClassifier(FashionMNISTModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
-    def __init__(self, dataset: DatasetType) -> None:
+    def __init__(self, dataset: ClassifierDataset) -> None:
         """ Loads the specified dataset and stores it in instance attributes """
         self.dataset_type = dataset
 
         match self.dataset_type:
-            case config.DatasetType.FASHION_MNIST:
+            case ClassifierDataset.FASHION_MNIST:
                 train_dataset = FashionMNIST(root='data', train=True, download=True)
                 test_dataset = FashionMNIST(root='data', train=False, download=True)
                 self.dataset_shape = config.FASHION_MNIST_SHAPE
                 self.class_labels = config.FASHION_MNIST_CLASS_LABELS
-            case config.DatasetType.CIFAR_10:
+            case ClassifierDataset.CIFAR_10:
                 train_dataset = CIFAR10(root='data', train=True, download=True)
                 test_dataset = CIFAR10(root='data', train=False, download=True)
                 self.dataset_shape = config.CIFAR_10_SHAPE
@@ -115,7 +112,7 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
             # Pass the channel size as 3 when fine tuning a classifier
             # pretrained on 3-channel images, on a grayscale dataset
             input_shape = self.dataset_shape
-            if self.dataset_type == config.DatasetType.FASHION_MNIST and self.X_train.shape[3] == 3:
+            if self.dataset_type == ClassifierDataset.FASHION_MNIST and self.X_train.shape[3] == 3:
                 input_shape = (3, self.dataset_shape[1], self.dataset_shape[2])
 
             LOGGER.info('>>> Network components:')
@@ -203,9 +200,14 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
             f.write(f'Number of Epochs: {hyperparams["NUM_EPOCHS"]}\n')
 
     def export_model(self) -> None:
-        """ Exports the model currently in memory in Tensorflow.js format """
-        artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
-        save_keras_model(self.model, artifacts_path)
+        """ Exports the model currently in memory in ONNX format """
+        classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
+        classifier_artifacts_path.mkdir()
+        model_path = classifier_artifacts_path / 'model.onnx'
+        dummy_input = torch.randn(1, *self.dataset_shape)
+        self.model.eval()
+        onnx_program = torch.onnx.dynamo_export(self.model, dummy_input)
+        onnx_program.save(str(model_path))
 
     def _create_current_run_directory(self) -> None:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding
