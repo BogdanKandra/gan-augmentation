@@ -4,7 +4,20 @@ from pathlib import Path
 
 
 ### Enums
-class DatasetType(Enum):
+class ClassifierDataset(Enum):
+    FASHION_MNIST = 1
+    FASHION_MNIST_GAN = 2
+    FASHION_MNIST_DCGAN = 3
+    FASHION_MNIST_DDPM = 4
+    FASHION_MNIST_DDIM = 5
+    CIFAR_10 = 6
+    CIFAR_10_GAN = 7
+    CIFAR_10_DCGAN = 8
+    CIFAR_10_DDPM = 9
+    CIFAR_10_DDIM = 10
+
+
+class GeneratorDataset(Enum):
     FASHION_MNIST = 1
     CIFAR_10 = 2
 
