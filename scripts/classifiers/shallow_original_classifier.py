@@ -38,7 +38,7 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
 
     def train_model(self) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory.
-        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric
+        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metrics
         are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
         Precision, Recall, and F1-Score.
         """
