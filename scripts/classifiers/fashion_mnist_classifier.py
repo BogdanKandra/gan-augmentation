@@ -165,37 +165,42 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         with open(results_path, 'w') as f:
             f.write(json.dumps(testing_results, indent=4))
 
-        # # Generate the classification report
-        # predictions = self.model(self.X_test)
-        # y_pred = np.argmax(predictions, axis=1)
-        # y_pred_categorical = to_categorical(y_pred)
+        # Generate the classification report
+        predictions = self.model(self.X_test)
+        y_pred = torch.argmax(predictions, dim=1)
 
-        # report = sk_metrics.classification_report(self.y_test, y_pred_categorical, target_names=self.class_labels)
-        # report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
-        # with open(report_path, 'w') as f:
-        #     f.write(report)
+        report = sk_metrics.classification_report(self.y_test, y_pred, target_names=self.class_labels)
+        report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
+        with open(report_path, 'w') as f:
+            f.write(report)
 
-        # # Generate the confusion matrix
-        # self.y_test = np.argmax(self.y_test, axis=1)
-        # cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(10)))
-        # utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
+        # Generate the confusion matrix
+        cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(len(self.class_labels))))
+        utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
 
-        # # Generate a file containing model information and parameters
-        # training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Information.txt'
-        # try:
-        #     model_str = json.loads(self.model.to_json())
-        # except NotImplementedError:
-        #     model_str = 'N/A'
-        # training_info = {
-        #     'batch_size': hyperparams['BATCH_SIZE'],
-        #     'early_stopping_tolerance': hyperparams['EARLY_STOPPING_TOLERANCE'],
-        #     'learning_rate': hyperparams['LEARNING_RATE'],
-        #     'num_epochs': hyperparams['NUM_EPOCHS'],
-        #     'model': model_str,
-        #     'optimizer': str(serialize(self.model.optimizer))
-        # }
-        # with open(training_info_path, 'w') as f:
-        #     f.write(json.dumps(training_info, indent=4))
+        # Generate a file containing model information and parameters
+        training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Information.txt'
+        with open(training_info_path, 'w') as f:
+            f.write('MODEL ARCHITECTURE:\n')
+            f.write('------------------------------\n')
+            for line in str(self.model).split('\n'):
+                f.write(f'{line}\n')
+
+            f.write('\nOPTIMIZER:\n')
+            f.write('------------------------------\n')
+            for line in str(self.optimizer).split('\n'):
+                f.write(f'{line}\n')
+
+            f.write('\nLOSS FUNCTION:\n')
+            f.write('------------------------------\n')
+            f.write(f'{str(self.loss)}\n')
+
+            f.write('\nHYPERPARAMETERS:\n')
+            f.write('------------------------------\n')
+            f.write(f'Batch Size: {hyperparams["BATCH_SIZE"]}\n')
+            f.write(f'Early Stopping Tolerance: {hyperparams["EARLY_STOPPING_TOLERANCE"]}\n')
+            f.write(f'Learning Rate: {hyperparams["LEARNING_RATE"]}\n')
+            f.write(f'Number of Epochs: {hyperparams["NUM_EPOCHS"]}\n')
 
     def export_model(self) -> None:
         """ Exports the model currently in memory in Tensorflow.js format """
