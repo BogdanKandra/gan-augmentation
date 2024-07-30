@@ -72,7 +72,11 @@ The tests directory contains unit tests for the scripts.
 
 # TODO
 - Replace TensorFlow with PyTorch
+    - Rewrite convolutional_original_classifier
+        - Solve the error related to channels-first instead of channels-last
+    - Rewrite efficientnet_original_classifier
 
+- Update method docs
 - scripts/classifiers:
 	- Rename the 4 x Classifier concrete classes
 		- Since these do not depend on the dataset, the names are:
@@ -150,6 +154,7 @@ The tests directory contains unit tests for the scripts.
 
 
 
+- Add L2 regularization to the CNN classifier?    # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 - Maybe create a class structure for representing the training data ?
 - Add inference function with ONNX Runtime (Check reference 3 in documentation)
 - Add quantization function
