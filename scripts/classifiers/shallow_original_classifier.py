@@ -38,8 +38,9 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
 
     def train_model(self) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory.
-        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric is Accuracy,
-        which is appropriate for our problem, because the dataset classes are balanced.
+        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metric
+        are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
+        Precision, Recall, and F1-Score.
         """
         # Define the optimizer and loss functions
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config.SHALLOW_CLF_HYPERPARAMS['LEARNING_RATE'])
