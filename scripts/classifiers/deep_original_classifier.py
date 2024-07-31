@@ -20,9 +20,9 @@ class DNNOriginalClassifier(FashionMNISTClassifier):
         if not self.preprocessed:
             # If the loaded dataset is grayscale, add the channel dimension
             if len(self.X_train.shape) == 3:
-                self.X_train = torch.unsqueeze(self.X_train, dim=3)
-                self.X_valid = torch.unsqueeze(self.X_valid, dim=3)
-                self.X_test = torch.unsqueeze(self.X_test, dim=3)
+                self.X_train = torch.unsqueeze(self.X_train, dim=1)
+                self.X_valid = torch.unsqueeze(self.X_valid, dim=1)
+                self.X_test = torch.unsqueeze(self.X_test, dim=1)
 
             # Convert to float and rescale to [0, 1]
             self.X_train = self.X_train.to(torch.float32) / 255.0
