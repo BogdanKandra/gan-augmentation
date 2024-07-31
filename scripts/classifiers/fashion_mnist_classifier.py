@@ -99,8 +99,9 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         idx = 1
 
         for i in indices:
+            sample = self.X_train[i].permute(1, 2, 0)  # Image must be channels-last in matplotlib
             plt.subplot(grid_size, grid_size, idx)
-            plt.imshow(self.X_train[i], cmap=cmap)
+            plt.imshow(sample, cmap=cmap)
             plt.axis('off')
             idx += 1
 
