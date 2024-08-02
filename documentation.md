@@ -1,3 +1,101 @@
+# TODO
+- Replace TensorFlow with PyTorch
+    - Rewrite efficientnet_original_classifier
+
+- New branch: Refactoring
+	- Update docs throughout the project
+	- scripts/classifiers:
+		- Rename the 4 x Classifier concrete classes
+			- Since these do not depend on the dataset, the names are:
+				- shallow_classifier.py
+				- deep_classifier.py
+				- convolutional_classifier.py
+				- efficientnet_classifier.py
+		- Rename the 1 x Classifier abstract class
+			- Since this represents classifiers on TorchVision datasets, its name is:
+				- torchvision_dataset_classifier.py
+
+	- scripts/generators:
+		- Create the 4 x Generator concrete classes
+			- Since these do not depend on the dataset, the names are:
+				- gan_generator.py
+				- dcgan_generator.py
+				- ddpm_generator.py
+				- ddim_generator.py
+		- Create 1 x Generator abstract class
+			- Since this represents generators on TorchVision datasets, its name is:
+				- torchvision_dataset_generator.py
+			- The constructor takes in a str representing the TorchVision dataset name
+
+	- scripts/interfaces:
+		- Rename the 1 x TorchVisionDatasetModel interface
+			- Since this represents models trained on TorchVision datasets, its name
+			is:
+				- torchvision_dataset_model.py
+
+	- _create_current_run_directory()
+		- When saving classifier models and training results, each directory is named
+			according to the user selected classifier type and dataset
+		- When saving generator models and training results, each directory is named
+			according to the user selected generator type and dataset
+
+	- display_dataset_information()
+		- Also plot the label for each sample
+
+
+
+- Add stuff learned from Krish Naik video:
+	- Integrate MlFlow
+	- Remove magic numbers by adding config file for constants and hyperparams
+	- Update README file with details on how to train and perform inference and stuff
+	- Watch video again
+
+- Prepare training on GPU:
+	- Write notebook for testing GPU availability
+	- Update code so that it is device-aware
+	- Update training notebooks so that they also use the GPU if available
+
+- Implement GANs:
+	- VanillaGAN
+	- DCGAN
+	- Implement both GANs as conditional GANs
+	- Implement both loss functions: BCE loss / W-loss
+	- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
+
+- Implement Diffusion Models:
+	- DDPM
+	- DDIM
+	- Implement both DMs as conditional DMs
+	- Loss functions?
+	- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
+
+- Augment datasets using generator models
+	- How exactly ??
+
+- Train the 4 classifiers on augmented datasets
+
+- Analyze results
+
+- Write Jupyter Notebooks:
+	- 1 x Notebook for training and evaluating generator models
+		- User chooses generator type (VanillaGAN / DCGAN / DDPM / DDIM)
+		- User chooses dataset (FashionMNIST / CIFAR-10)
+	- 1 x Notebook for running inference on the best generator model
+	- 1 x Notebook for running inference on the best classifier model
+	- 1 x Notebook for testing GPU availability
+
+
+
+- Integrate TensorBoard ???
+- Add L2 regularization to the CNN classifier?    # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
+- Maybe create a class structure for representing the training data ?
+- Add inference function with ONNX Runtime (Check third ONNX reference in documentation)
+- Add quantization function
+- Write tests for the classifier scripts ???
+- Deployment of model - https://pytorch.org/serve/
+
+<br>
+
 # Project Structure
 - artifacts
     - classifiers
@@ -67,99 +165,6 @@ The tests directory contains unit tests for the scripts.
     - If dataset_name is 'fashion_mnist' or 'cifar-10', the original datasets
         are loaded; otherwise, the original datasets are augmented using
         the specified generator model.
-
-<br>
-
-# TODO
-- Replace TensorFlow with PyTorch
-    - Rewrite convolutional_original_classifier
-        - Solve the error related to channels-first instead of channels-last
-    - Rewrite efficientnet_original_classifier
-
-- Update method docs
-- scripts/classifiers:
-	- Rename the 4 x Classifier concrete classes
-		- Since these do not depend on the dataset, the names are:
-			- shallow_classifier.py
-			- deep_classifier.py
-			- convolutional_classifier.py
-			- efficientnet_classifier.py
-	- Rename the 1 x Classifier abstract class
-		- Since this represents classifiers on TorchVision datasets, its name is:
-			- torchvision_dataset_classifier.py
-
-- scripts/generators:
-	- Create the 4 x Generator concrete classes
-		- Since these do not depend on the dataset, the names are:
-			- gan_generator.py
-			- dcgan_generator.py
-			- ddpm_generator.py
-			- ddim_generator.py
-	- Create 1 x Generator abstract class
-		- Since this represents generators on TorchVision datasets, its name is:
-			- torchvision_dataset_generator.py
-		- The constructor takes in a str representing the TorchVision dataset name
-
-- scripts/interfaces:
-	- Rename the 1 x TorchVisionDatasetModel interface
-		- Since this represents models trained on TorchVision datasets, its name
-		is:
-			- torchvision_dataset_model.py
-
-- _create_current_run_directory()
-	- When saving classifier models and training results, each directory is named
-		according to the user selected classifier type and dataset
-	- When saving generator models and training results, each directory is named
-		according to the user selected generator type and dataset
-
-- Add stuff learned from Krish Naik video:
-	- Integrate MlFlow
-	- Remove magic numbers by adding config file for constants and hyperparams
-	- Update README file with details on how to train and perform inference and stuff
-	- Watch video again
-
-- Prepare training on GPU:
-	- Write notebook for testing GPU availability
-	- Update code so that it is device-aware
-	- Update training notebooks so that they also use the GPU if available
-
-- Implement GANs:
-	- VanillaGAN
-	- DCGAN
-	- Implement both GANs as conditional GANs
-	- Implement both loss functions: BCE loss / W-loss
-	- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
-
-- Implement Diffusion Models:
-	- DDPM
-	- DDIM
-	- Implement both DMs as conditional DMs
-	- Loss functions?
-	- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
-
-- Augment datasets using generator models
-	- How exactly ??
-
-- Train the 4 classifiers on augmented datasets
-
-- Analyze results
-
-- Write Jupyter Notebooks:
-	- 1 x Notebook for training and evaluating generator models
-		- User chooses generator type (VanillaGAN / DCGAN / DDPM / DDIM)
-		- User chooses dataset (FashionMNIST / CIFAR-10)
-	- 1 x Notebook for running inference on the best generator model
-	- 1 x Notebook for running inference on the best classifier model
-	- 1 x Notebook for testing GPU availability
-
-
-
-- Add L2 regularization to the CNN classifier?    # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
-- Maybe create a class structure for representing the training data ?
-- Add inference function with ONNX Runtime (Check reference 3 in documentation)
-- Add quantization function
-- Write tests for the classifier scripts ???
-- Deployment of model - https://pytorch.org/serve/
 
 <br>
 
