@@ -8,8 +8,8 @@ from scripts import config
 class EfficientNet(nn.Module):
     def __init__(self, dataset: str) -> None:
         """ Class representing a network based on the EfficientNetB0 pretrained
-        network, with a new classifier head consisting of Dropout and the Output
-        layer
+        network, using it as a fixed feature extractor, with a new classifier head
+        consisting of Dropout and the Output layer
 
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -29,6 +29,8 @@ class EfficientNet(nn.Module):
             param.requires_grad = False
 
         self.feature_extractor.classifier = nn.Sequential(
+            # self.model.add(GlobalAveragePooling2D())
+            # self.model.add(BatchNormalization())
             nn.Dropout(p=0.2, inplace=True),
             nn.Linear(in_features=1280, out_features=self.out_features),
             nn.Softmax(dim=0)
