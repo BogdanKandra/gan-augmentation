@@ -19,11 +19,16 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
     def preprocess_dataset(self) -> None:
         """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
         if not self.preprocessed:
-            # If the loaded dataset is grayscale, add the channel dimension
             if len(self.X_train.shape) == 3:
+                # If the loaded dataset is grayscale, add the channel dimension
                 self.X_train = torch.unsqueeze(self.X_train, dim=1)
                 self.X_valid = torch.unsqueeze(self.X_valid, dim=1)
                 self.X_test = torch.unsqueeze(self.X_test, dim=1)
+            elif len(self.X_train.shape) == 4 and self.X_train.shape[3] == 3:
+                # If the loaded dataset is RGB channels-last, transform to channel-first
+                self.X_train = self.X_train.permute(0, 3, 1, 2)
+                self.X_valid = self.X_valid.permute(0, 3, 1, 2)
+                self.X_test = self.X_test.permute(0, 3, 1, 2)
 
             # Convert to float and rescale to [0, 1]
             self.X_train = self.X_train.to(torch.float32) / 255.0
