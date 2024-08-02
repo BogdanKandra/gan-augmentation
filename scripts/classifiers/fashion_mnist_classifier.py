@@ -66,11 +66,11 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory """
         LOGGER.info(f'>>> Train Set Shape: X_train.shape={self.X_train.shape}, y_train.shape={self.y_train.shape}')
-        LOGGER.info(f'>>> Train Set dtype: X_train.shape={self.X_train.dtype}, y_train.dtype={self.y_train.dtype}')
+        LOGGER.info(f'>>> Train Set dtype: X_train.dtype={self.X_train.dtype}, y_train.dtype={self.y_train.dtype}')
         LOGGER.info(f'>>> Validation Set Shape: X_valid.shape={self.X_valid.shape}, y_valid.shape={self.y_valid.shape}')
         LOGGER.info(f'>>> Validation Set dtype: X_valid.dtype={self.X_valid.dtype}, y_valid.dtype={self.y_valid.dtype}')
         LOGGER.info(f'>>> Test Set Shape: X_test.shape={self.X_test.shape}, y_test.shape={self.y_test.shape}')
-        LOGGER.info(f'>>> Test Set dtype: X_test.shape={self.X_test.dtype}, y_test.dtype={self.y_test.dtype}')
+        LOGGER.info(f'>>> Test Set dtype: X_test.dtype={self.X_test.dtype}, y_test.dtype={self.y_test.dtype}')
 
     def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
         """ Displays some images from the dataset currently in memory.
