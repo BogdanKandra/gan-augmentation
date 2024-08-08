@@ -29,8 +29,8 @@ class EfficientNet(nn.Module):
             param.requires_grad = False
 
         self.feature_extractor.classifier = nn.Sequential(
-            # self.model.add(GlobalAveragePooling2D())
-            # self.model.add(BatchNormalization())
+            # nn.AdaptiveAvgPool2d(1),
+            # nn.BatchNorm2d(1280),
             nn.Dropout(p=0.2, inplace=True),
             nn.Linear(in_features=1280, out_features=self.out_features),
             nn.Softmax(dim=0)
