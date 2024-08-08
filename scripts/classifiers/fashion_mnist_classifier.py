@@ -113,7 +113,7 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
             # Pass the channel size as 3 when fine tuning a classifier
             # pretrained on 3-channel images, on a grayscale dataset
             input_shape = self.dataset_shape
-            if self.dataset_type == ClassifierDataset.FASHION_MNIST and self.X_train.shape[3] == 3:
+            if self.dataset_type == ClassifierDataset.FASHION_MNIST and self.X_train.shape[1] == 3:
                 input_shape = (3, self.dataset_shape[1], self.dataset_shape[2])
 
             LOGGER.info('>>> Network components:')
@@ -123,7 +123,7 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
                 self.model,
                 input_size=(1, *input_shape),
                 col_names=["input_size", "output_size", "num_params",
-                            "params_percent", "kernel_size", "mult_adds", "trainable"],
+                           "params_percent", "kernel_size", "mult_adds", "trainable"],
                 verbose=1
             )
         else:
