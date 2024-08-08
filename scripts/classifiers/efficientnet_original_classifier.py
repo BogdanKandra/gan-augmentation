@@ -2,9 +2,9 @@ from typing import Dict, List
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from torcheval.metrics import MulticlassAccuracy, MulticlassPrecision, MulticlassRecall, MulticlassF1Score
-from torchvision.models import EfficientNet_B0_Weights
 from tqdm import tqdm
 
 from scripts import config, utils
@@ -37,11 +37,35 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
                 self.X_valid = self.X_valid.permute(0, 3, 1, 2)
                 self.X_test = self.X_test.permute(0, 3, 1, 2)
 
-            # Preprocess the dataset using the EfficientNet transforms
-            auto_transforms = EfficientNet_B0_Weights.IMAGENET1K_V1.transforms()
-            self.X_train = auto_transforms(self.X_train)
-            self.X_valid = auto_transforms(self.X_valid)
-            self.X_test = auto_transforms(self.X_test)
+            # # Preprocess the dataset using the EfficientNet transforms
+            # auto_transforms = EfficientNet_B0_Weights.IMAGENET1K_V1.transforms()
+            # self.X_train = auto_transforms(self.X_train)
+            # self.X_valid = auto_transforms(self.X_valid)
+            # self.X_test = auto_transforms(self.X_test)
+
+            # Resize the images to 224x224
+            self.X_train = F.interpolate(self.X_train, size=(224, 224), mode='bicubic')
+            self.X_valid = F.interpolate(self.X_valid, size=(224, 224), mode='bicubic')
+            self.X_test = F.interpolate(self.X_test, size=(224, 224), mode='bicubic')
+
+            # Convert to float and rescale to [0, 1]
+            self.X_train = self.X_train.to(torch.float32) / 255.0
+            self.X_valid = self.X_valid.to(torch.float32) / 255.0
+            self.X_test = self.X_test.to(torch.float32) / 255.0
+
+            # # Normalize the images with the ImageNet mean and standard deviation
+            # mean = torch.tensor([0.485, 0.456, 0.406])
+            # std = torch.tensor([0.229, 0.224, 0.225])
+            # mean = mean[None, :, None, None]
+            # std = std[None, :, None, None]
+
+            # Normalize the images with the dataset mean and standard deviation
+            mean = torch.mean(self.X_train, dim=(0, 2, 3), keepdim=True)
+            std = torch.std(self.X_train, dim=(0, 2, 3), keepdim=True)
+
+            self.X_train = (self.X_train - mean) / std
+            self.X_valid = (self.X_valid - mean) / std
+            self.X_test = (self.X_test - mean) / std
 
             self.preprocessed = True
 
@@ -156,7 +180,7 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
                 if valid_loss <= best_loss:
                     if early_stopping_counter != 0:
                         early_stopping_counter = 0
-                        LOGGER.info(f">> Early stopping counter reset.")
+                        LOGGER.info(">> Early stopping counter reset.")
                     self.best_model_state = self.model.state_dict()
                 else:
                     early_stopping_counter += 1
