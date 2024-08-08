@@ -144,7 +144,7 @@ class SNNOriginalClassifier(FashionMNISTClassifier):
                 if valid_loss <= best_loss:
                     if early_stopping_counter != 0:
                         early_stopping_counter = 0
-                        LOGGER.info(f">> Early stopping counter reset.")
+                        LOGGER.info(">> Early stopping counter reset.")
                     self.best_model_state = self.model.state_dict()
                 else:
                     early_stopping_counter += 1
