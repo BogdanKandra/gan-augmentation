@@ -1,1 +1,3 @@
-from scripts.interfaces.fashion_mnist_model import FashionMNISTModel
+from scripts.interfaces.torchvision_dataset_model import TorchVisionDatasetModel
+
+__all__ = ['TorchVisionDatasetModel']
