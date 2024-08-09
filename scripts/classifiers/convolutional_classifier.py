@@ -7,13 +7,13 @@ from torcheval.metrics import MulticlassAccuracy, MulticlassPrecision, Multiclas
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import FashionMNISTClassifier
+from scripts.classifiers import TorchVisionDatasetClassifier
 from scripts.models.cnn import CNN
 
 LOGGER = utils.get_logger(__name__)
 
 
-class CNNOriginalClassifier(FashionMNISTClassifier):
+class CNNClassifier(TorchVisionDatasetClassifier):
     """ Class representing a strong classifier for the original Fashion-MNIST dataset, using a convolutional neural
      network """
     def preprocess_dataset(self) -> None:

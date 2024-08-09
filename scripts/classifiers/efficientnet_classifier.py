@@ -8,13 +8,13 @@ from torcheval.metrics import MulticlassAccuracy, MulticlassPrecision, Multiclas
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import FashionMNISTClassifier
+from scripts.classifiers import TorchVisionDatasetClassifier
 from scripts.models.efficient_net import EfficientNet
 
 LOGGER = utils.get_logger(__name__)
 
 
-class EfficientNetOriginalClassifier(FashionMNISTClassifier):
+class EfficientNetClassifier(TorchVisionDatasetClassifier):
     """ Class representing a very strong classifier for the original Fashion-MNIST dataset,
     using the transfer learning approach """
     def preprocess_dataset(self) -> None:

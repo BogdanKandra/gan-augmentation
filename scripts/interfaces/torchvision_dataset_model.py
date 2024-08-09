@@ -6,7 +6,7 @@ from typing import Dict, List
 LOGGER = utils.get_logger(__name__)
 
 
-class FashionMNISTModel(ABC):
+class TorchVisionDatasetModel(ABC):
     """ Abstract class representing the blueprint all classifiers and generators
     on the Fashion-MNIST dataset must follow """
     @classmethod
@@ -30,7 +30,7 @@ class FashionMNISTModel(ABC):
     @abstractmethod
     def train_model(self) -> Dict[str, List[float]]:
         """ Defines the training parameters and runs the training loop for the model currently in memory
-        
+
         Returns:
             Dict[str, List[float]]: dictionary containing the loss values and the accuracy,
                 precision, recall and F1 score results, both on the training and validation sets
@@ -40,7 +40,7 @@ class FashionMNISTModel(ABC):
     @abstractmethod
     def evaluate_model(self) -> Dict[str, float]:
         """ Evaluates the model currently in memory by running it on the testing set
-        
+
         Returns:
             Dict[str, float]: dictionary containing the loss value and the accuracy,
                 precision, recall and F1 score results on the testing set

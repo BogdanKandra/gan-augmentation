@@ -13,13 +13,13 @@ from torchvision.datasets import CIFAR10, FashionMNIST
 
 from scripts import config, utils
 from scripts.config import ClassifierDataset
-from scripts.interfaces import FashionMNISTModel
+from scripts.interfaces import TorchVisionDatasetModel
 
 
 LOGGER = utils.get_logger(__name__)
 
 
-class FashionMNISTClassifier(FashionMNISTModel, ABC):
+class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
     def __init__(self, dataset: ClassifierDataset) -> None:
         """ Loads the specified dataset and stores it in instance attributes """
