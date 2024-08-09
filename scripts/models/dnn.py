@@ -8,8 +8,8 @@ from scripts import config
 
 class DNN(nn.Module):
     def __init__(self, dataset: str) -> None:
-        """ Class representing a deep neural network, consisting of the
-        Input and Output layers, and 3 hidden layers in between
+        """ Class representing a deep neural network, consisting of
+        the Input and Output layers, and 3 hidden layers in between.
 
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -37,9 +37,9 @@ class DNN(nn.Module):
             nn.Linear(in_features=16, out_features=self.out_features),
             nn.Softmax(dim=0)
         )
-    
+
     def forward(self, x: Tensor) -> Tensor:
-        """ Tensor flow through the network for each dataset:
+        """ Performs the forward pass through the network. The tensors flow for each dataset as follows:
         Fashion-MNIST: (1,28,28) -> (1*28*28) -> (256) -> (64) -> (16) -> (10)
         CIFAR-10: (3,32,32) -> (3*32*32) -> (256) -> (64) -> (16) -> (10) """
         x = self.classifier(x)

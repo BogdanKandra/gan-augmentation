@@ -11,7 +11,7 @@ LOGGER = utils.get_logger(__name__)
 class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
     """ Abstract class representing the blueprint all generators on TorchVision datasets must follow """
     def __init__(self, dataset: GeneratorDataset) -> None:
-        """ TBA """
+        """ Loads the specified dataset and stores it in instance attributes. """
         pass
 
     @classmethod

@@ -7,9 +7,8 @@ from scripts import config
 
 class EfficientNet(nn.Module):
     def __init__(self, dataset: str) -> None:
-        """ Class representing a network based on the EfficientNetB0 pretrained
-        network, using it as a fixed feature extractor, with a new classifier head
-        consisting of Dropout and the Output layer
+        """ Class representing a network based on the EfficientNetB0 pretrained network, using it as a fixed feature
+        extractor, with a new classifier head consisting of Dropout and the Output layer.
 
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -37,7 +36,7 @@ class EfficientNet(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        """ Tensor flow through the network for each dataset:
+        """ Performs the forward pass through the network. The tensors flow for each dataset as follows:
         Fashion-MNIST: (1,28,28) -> (3,224,224) -> (1280) -> (10)
         CIFAR-10: (3,32,32) -> (3,224,224) -> (1280) -> (10) """
         x = self.feature_extractor(x)

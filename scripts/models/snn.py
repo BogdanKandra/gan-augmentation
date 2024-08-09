@@ -8,9 +8,9 @@ from scripts import config
 
 class SNN(nn.Module):
     def __init__(self, dataset: str) -> None:
-        """ Class representing a shallow neural network, consisting of the
-        Input and Output layers, and a single hidden layer
-        
+        """ Class representing a shallow neural network, consisting of
+        the Input and Output layers, and a single hidden layer.
+
         Arguments:
             dataset (str): the name of the dataset to be used """
         super().__init__()
@@ -33,9 +33,9 @@ class SNN(nn.Module):
             nn.Linear(in_features=256, out_features=self.out_features),
             nn.Softmax(dim=0)
         )
-    
+
     def forward(self, x: Tensor) -> Tensor:
-        """ Tensor flow through the network for each dataset:
+        """ Performs the forward pass through the network. The tensors flow for each dataset as follows:
         Fashion-MNIST: (1,28,28) -> (1*28*28) -> (256) -> (10)
         CIFAR-10: (3,32,32) -> (3*32*32) -> (256) -> (10) """
         x = self.classifier(x)

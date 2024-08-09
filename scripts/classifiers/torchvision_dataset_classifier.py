@@ -22,7 +22,7 @@ LOGGER = utils.get_logger(__name__)
 class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
     def __init__(self, dataset: ClassifierDataset) -> None:
-        """ Loads the specified dataset and stores it in instance attributes """
+        """ Loads the specified dataset and stores it in instance attributes. """
         self.dataset_type = dataset
 
         match self.dataset_type:
@@ -64,7 +64,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
                 hasattr(subclass, 'evaluate_model') and callable(subclass.evaluate_model))
 
     def display_dataset_information(self) -> None:
-        """ Logs information about the dataset currently in memory """
+        """ Logs information about the dataset currently in memory. """
         LOGGER.info(f'>>> Train Set Shape: X_train.shape={self.X_train.shape}, y_train.shape={self.y_train.shape}')
         LOGGER.info(f'>>> Train Set dtype: X_train.dtype={self.X_train.dtype}, y_train.dtype={self.y_train.dtype}')
         LOGGER.info(f'>>> Validation Set Shape: X_valid.shape={self.X_valid.shape}, y_valid.shape={self.y_valid.shape}')
@@ -73,8 +73,8 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         LOGGER.info(f'>>> Test Set dtype: X_test.dtype={self.X_test.dtype}, y_test.dtype={self.y_test.dtype}')
 
     def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
-        """ Displays some images from the dataset currently in memory.
-        Maximum number of images to be displayed is min(100, batch size)
+        """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
+        min(100, batch size).
 
         Arguments:
             num_samples (int, optional): the number of images to be displayed
@@ -108,7 +108,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         plt.show()
 
     def display_model(self) -> None:
-        """ Logs information about the model currently in memory """
+        """ Logs information about the model currently in memory. """
         if self.model is not None:
             # Pass the channel size as 3 when fine tuning a classifier
             # pretrained on 3-channel images, on a grayscale dataset
@@ -135,18 +135,17 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         training_results: Dict[str, List[float]],
         testing_results: Dict[str, float]
     ) -> None:
-        """ Evaluates the model currently in memory by plotting training and validation
-        accuracy and loss and generating the classification report and confusion matrix
+        """ Saves the current training run results by plotting training and validation accuracy and loss,
+        and generating the classification report and confusion matrix.
 
         Arguments:
-            results_dir (Path): the path to where the training results will be saved
+            hyperparams (Dict[str, int]): dictionary containing the hyperparameters used during training
 
             training_results (Dict[str, List[float]]): dictionary containing the loss values and
-                the accuracy, precision, recall and F1 score results, both on the training and
-                validation sets
+                the accuracy, precision, recall and F1 score results, both on the training and validation sets
 
-            test_results (Dict[str, float]): dictionary containing the loss, accuracy, precision,
-                recall and F1 score results on the test set
+            test_results (Dict[str, float]): dictionary containing the loss, accuracy, precision, recall and F1 score
+                results on the test set
         """
         self._create_current_run_directory()
 
@@ -201,7 +200,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             f.write(f'Number of Epochs: {hyperparams["NUM_EPOCHS"]}\n')
 
     def export_model(self) -> None:
-        """ Exports the model currently in memory in ONNX format """
+        """ Exports the model currently in memory in ONNX format. """
         classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
         classifier_artifacts_path.mkdir()
         model_path = classifier_artifacts_path / 'model.onnx'
@@ -212,7 +211,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
     def _create_current_run_directory(self) -> None:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding
-        results and sets the name of the created directory as a class field """
+        results and sets the name of the created directory as a class field. """
         training_runs = filter(lambda path: path.is_dir(), config.CLASSIFIER_RESULTS_PATH.iterdir())
         training_runs = list(map(lambda path: path.stem, training_runs))
         relevant_runs = list(filter(lambda name: name.startswith(self.__class__.__name__), training_runs))

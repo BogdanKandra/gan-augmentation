@@ -14,9 +14,9 @@ LOGGER = utils.get_logger(__name__)
 
 
 class DNNClassifier(TorchVisionDatasetClassifier):
-    """ Class representing a good classifier for the original Fashion-MNIST dataset, using a deep neural network """
+    """ Class representing a classifier for Torchvision datasets, using a deep neural network """
     def preprocess_dataset(self) -> None:
-        """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
+        """ Preprocesses the dataset currently in memory by reshaping it and scaling the values. """
         if not self.preprocessed:
             if len(self.X_train.shape) == 3:
                 # If the loaded dataset is grayscale, add the channel dimension
@@ -29,7 +29,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
                 self.X_valid = self.X_valid.permute(0, 3, 1, 2)
                 self.X_test = self.X_test.permute(0, 3, 1, 2)
 
-            # Convert to float and rescale to [0, 1]
+            # Convert to float and scale to [0, 1]
             self.X_train = self.X_train.to(torch.float32) / 255.0
             self.X_valid = self.X_valid.to(torch.float32) / 255.0
             self.X_test = self.X_test.to(torch.float32) / 255.0
@@ -37,17 +37,15 @@ class DNNClassifier(TorchVisionDatasetClassifier):
             self.preprocessed = True
 
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute. The model used here is a deep
-         neural network, consisting of the Input and Output layers and 3 hidden layers in between, with a vanilla SGD as
-         optimizer """
+        """ Defines the classifier's model structure and stores it as an instance attribute. The model used here is a
+        deep neural network, consisting of the Input and Output layers and 3 hidden layers in between. """
         self.model = DNN(self.dataset_type)
 
     def train_model(self) -> None:
-        """ Defines the training parameters and runs the training loop for the model currently in memory.
-        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metrics
-        are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
-        Precision, Recall, and F1-Score.
-        """
+        """ Defines the training parameters and runs the training loop for the model currently in memory. Vanilla SGD
+        is used as the optimizer, the loss function to be optimised is the Categorical Cross-entropy loss, and the
+        measured metrics are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
+        Precision, Recall, and F1-Score. An early stopping mechanism is used to prevent overfitting. """
         # Define the optimizer and loss functions
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config.DEEP_CLF_HYPERPARAMS['LEARNING_RATE'])
         self.loss = nn.CrossEntropyLoss()
@@ -204,6 +202,6 @@ class DNNClassifier(TorchVisionDatasetClassifier):
             LOGGER.info(self.evaluation_results)
 
     def save_results(self) -> None:
-        """ Evaluates the model currently in memory by plotting training and validation accuracy and loss
-        and generating the classification report and confusion matrix """
+        """ Saves the current training run results by plotting training and validation accuracy and loss and generating
+        the classification report and confusion matrix. """
         super().save_results(config.DEEP_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)

@@ -6,9 +6,8 @@ from scripts import config
 
 class CNN(nn.Module):
     def __init__(self, dataset: str) -> None:
-        """ Class representing a convolutional neural network, consisting of 3
-        convolutional blocks (with pooling, dropout and L2 regularization),
-        followed by a decoder block (composed of 2 linear layers with dropout)
+        """ Class representing a convolutional neural network, consisting of 3 convolutional blocks (with pooling,
+        dropout and L2 regularization), followed by a decoder block (composed of 2 linear layers with dropout).
 
         Arguments:
             dataset (str): the name of the dataset to be used """
@@ -64,7 +63,7 @@ class CNN(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        """ Tensor flow through the network for each dataset:
+        """ Performs the forward pass through the network. The tensors flow for each dataset as follows:
         Fashion-MNIST: (1,28,28) -> (64,14,14) -> (128,7,7) -> (256,3,3) ->
                        (256*3*3) -> (512) -> (10)
         CIFAR-10: (3,32,32) -> (64,16,16) -> (128,8,8) -> (256,4,4) ->
