@@ -96,14 +96,18 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
         # Plot random samples
         indices = [randrange(0, self.X_train.shape[0]) for _ in range(num_samples)]
-        idx = 1
+        indices.extend([-1] * (grid_size ** 2 - num_samples))  # Pad with -1 for empty spaces
 
-        for i in indices:
-            sample = self.X_train[i].permute(1, 2, 0)  # Image must be channels-last in matplotlib
-            plt.subplot(grid_size, grid_size, idx)
-            plt.imshow(sample, cmap=cmap)
-            plt.axis('off')
-            idx += 1
+        _, axes = plt.subplots(grid_size, grid_size, figsize=(8, 8))
+        for ax, i in zip(axes.flat, indices):
+            if i == -1:
+                ax.axis('off')
+            else:
+                sample = self.X_train[i].permute(1, 2, 0)  # Image must be channels-last in matplotlib
+                label = self.class_labels[self.y_train[i]]
+                ax.imshow(sample, cmap=cmap)
+                ax.set_title(label)
+                ax.axis('off')
 
         plt.show()
 
@@ -212,16 +216,17 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     def _create_current_run_directory(self) -> None:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding
         results and sets the name of the created directory as a class field. """
+        current_run_cls_dataset = f"{self.__class__.__name__} {self.dataset_type.name}"
         training_runs = filter(lambda path: path.is_dir(), config.CLASSIFIER_RESULTS_PATH.iterdir())
         training_runs = list(map(lambda path: path.stem, training_runs))
-        relevant_runs = list(filter(lambda name: name.startswith(self.__class__.__name__), training_runs))
+        relevant_runs = list(filter(lambda name: name.startswith(current_run_cls_dataset), training_runs))
 
         if len(relevant_runs) == 0:
-            current_run_dir_name = f"{self.__class__.__name__} Run 1"
+            current_run_dir_name = f"{current_run_cls_dataset} Run 1"
         else:
             run_numbers = [name.split(" ")[-1] for name in relevant_runs]
             latest_run = max(list(map(int, run_numbers)))
-            current_run_dir_name = f"{self.__class__.__name__} Run {latest_run + 1}"
+            current_run_dir_name = f"{current_run_cls_dataset} Run {latest_run + 1}"
 
         current_run_dir_path = config.CLASSIFIER_RESULTS_PATH / current_run_dir_name
         current_run_dir_path.mkdir()
