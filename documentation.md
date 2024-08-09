@@ -1,7 +1,4 @@
 # TODO
-- Replace TensorFlow with PyTorch
-    - Rewrite efficientnet_original_classifier
-
 - New branch: Refactoring
 	- Update docs throughout the project
 	- scripts/classifiers:
@@ -42,7 +39,9 @@
 	- display_dataset_information()
 		- Also plot the label for each sample
 
-
+	- Are the networks learning properly?
+	- save_results() optimization when the model is evaluated on the test set
+	- EfficientNet problems
 
 - Add stuff learned from Krish Naik video:
 	- Integrate MlFlow
@@ -85,7 +84,7 @@
 	- 1 x Notebook for testing GPU availability
 
 
-
+- Update README file with details on how to train, perform inference and other functionalities
 - Integrate TensorBoard ???
 - Add L2 regularization to the CNN classifier?    # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 - Maybe create a class structure for representing the training data ?
