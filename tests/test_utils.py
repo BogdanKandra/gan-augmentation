@@ -1,6 +1,8 @@
 from logging import Logger
-import scripts.utils as utils
+
 import pytest
+
+import scripts.utils as utils
 
 
 class TestUtils:

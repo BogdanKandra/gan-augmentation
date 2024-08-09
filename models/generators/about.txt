@@ -1,1 +1,0 @@
-The purpose of the 'models/generators' directory is to contain the trained GAN models, saved in Tensorflow.js format
