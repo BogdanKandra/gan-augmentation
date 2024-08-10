@@ -31,8 +31,8 @@ class EfficientNet(nn.Module):
             # nn.AdaptiveAvgPool2d(1),
             # nn.BatchNorm2d(1280),
             nn.Dropout(p=0.2, inplace=True),
-            nn.Linear(in_features=1280, out_features=self.out_features),
-            nn.Softmax(dim=0)
+            nn.Linear(in_features=1280, out_features=self.out_features)
+            # nn.Softmax(dim=0)  # Not needed here, since nn.CrossEntropyLoss() expects raw logits
         )
 
     def forward(self, x: Tensor) -> Tensor:

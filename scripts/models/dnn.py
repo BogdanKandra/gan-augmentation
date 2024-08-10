@@ -34,8 +34,8 @@ class DNN(nn.Module):
             nn.ReLU(),
             nn.Linear(in_features=64, out_features=16),
             nn.ReLU(),
-            nn.Linear(in_features=16, out_features=self.out_features),
-            nn.Softmax(dim=0)
+            nn.Linear(in_features=16, out_features=self.out_features)
+            # nn.Softmax(dim=0)  # Not needed here, since nn.CrossEntropyLoss() expects raw logits
         )
 
     def forward(self, x: Tensor) -> Tensor:

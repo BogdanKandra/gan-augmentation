@@ -58,8 +58,8 @@ class CNN(nn.Module):
             nn.Linear(in_features=self.decoder_features, out_features=512),
             nn.ReLU(),
             nn.Dropout(p=0.2),
-            nn.Linear(in_features=512, out_features=self.out_features),
-            nn.Softmax(dim=0)
+            nn.Linear(in_features=512, out_features=self.out_features)
+            # nn.Softmax(dim=0)  # Not needed here, since nn.CrossEntropyLoss() expects raw logits
         )
 
     def forward(self, x: Tensor) -> Tensor:
