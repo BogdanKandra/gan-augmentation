@@ -87,14 +87,14 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
-        train_accuracy = MulticlassAccuracy()
-        valid_accuracy = MulticlassAccuracy()
-        train_precision = MulticlassPrecision()
-        valid_precision = MulticlassPrecision()
-        train_recall = MulticlassRecall()
-        valid_recall = MulticlassRecall()
-        train_f1 = MulticlassF1Score()
-        valid_f1 = MulticlassF1Score()
+        train_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        valid_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        train_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        valid_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        train_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        valid_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        train_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
+        valid_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         # Keep track of metrics for evaluation
         self.training_history: Dict[str, List[float]] = {
@@ -195,10 +195,10 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         """ Evaluates the model currently in memory by running it on the testing set. """
         # Define the loss function and evaluation metrics
         loss = nn.CrossEntropyLoss()
-        accuracy = MulticlassAccuracy()
-        precision = MulticlassPrecision()
-        recall = MulticlassRecall()
-        f1_score = MulticlassF1Score()
+        accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         self.evaluation_results: Dict[str, float] = {
             "loss": 0.0,
