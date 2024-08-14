@@ -167,8 +167,10 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             f.write(json.dumps(testing_results, indent=4))
 
         # Generate the classification report
-        predictions = self.model(self.X_test)
-        y_pred = torch.argmax(predictions, dim=1)
+        with torch.no_grad():
+            self.model.eval()
+            predictions = self.model(self.X_test)
+            y_pred = torch.argmax(predictions, dim=1)
 
         report = sk_metrics.classification_report(self.y_test, y_pred, target_names=self.class_labels)
         report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
