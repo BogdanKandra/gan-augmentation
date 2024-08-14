@@ -1,53 +1,12 @@
 # TODO
-- New branch: Refactoring
-	- Update docs throughout the project
-	- scripts/classifiers:
-		- Rename the 4 x Classifier concrete classes
-			- Since these do not depend on the dataset, the names are:
-				- shallow_classifier.py
-				- deep_classifier.py
-				- convolutional_classifier.py
-				- efficientnet_classifier.py
-		- Rename the 1 x Classifier abstract class
-			- Since this represents classifiers on TorchVision datasets, its name is:
-				- torchvision_dataset_classifier.py
-
-	- scripts/generators:
-		- Create the 4 x Generator concrete classes
-			- Since these do not depend on the dataset, the names are:
-				- gan_generator.py
-				- dcgan_generator.py
-				- ddpm_generator.py
-				- ddim_generator.py
-		- Create 1 x Generator abstract class
-			- Since this represents generators on TorchVision datasets, its name is:
-				- torchvision_dataset_generator.py
-			- The constructor takes in a str representing the TorchVision dataset name
-
-	- scripts/interfaces:
-		- Rename the 1 x TorchVisionDatasetModel interface
-			- Since this represents models trained on TorchVision datasets, its name
-			is:
-				- torchvision_dataset_model.py
-
-	- _create_current_run_directory()
-		- When saving classifier models and training results, each directory is named
-			according to the user selected classifier type and dataset
-		- When saving generator models and training results, each directory is named
-			according to the user selected generator type and dataset
-
-	- display_dataset_information()
-		- Also plot the label for each sample
-
-	- Are the networks learning properly?
-	- save_results() optimization when the model is evaluated on the test set
-	- EfficientNet problems
-
 - Add stuff learned from Krish Naik video:
 	- Integrate MlFlow
-	- Remove magic numbers by adding config file for constants and hyperparams
-	- Update README file with details on how to train and perform inference and stuff
 	- Watch video again
+
+- save_results() optimization when the model is evaluated on the test set
+- Check the weight decay in optimizers
+- Solve EfficientNet problems
+- Save the model when early stopping
 
 - Prepare training on GPU:
 	- Write notebook for testing GPU availability
@@ -79,8 +38,8 @@
 	- 1 x Notebook for training and evaluating generator models
 		- User chooses generator type (VanillaGAN / DCGAN / DDPM / DDIM)
 		- User chooses dataset (FashionMNIST / CIFAR-10)
-	- 1 x Notebook for running inference on the best generator model
-	- 1 x Notebook for running inference on the best classifier model
+	- 1 x Notebook for running inference with a chosen generator model
+	- 1 x Notebook for running inference with a chosen classifier model
 	- 1 x Notebook for testing GPU availability
 
 

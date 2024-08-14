@@ -1,1 +1,3 @@
-from scripts.classifiers.fashion_mnist_classifier import FashionMNISTClassifier
+from scripts.classifiers.torchvision_dataset_classifier import TorchVisionDatasetClassifier
+
+__all__ = ['TorchVisionDatasetClassifier']

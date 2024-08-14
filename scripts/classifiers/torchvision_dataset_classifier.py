@@ -13,16 +13,16 @@ from torchvision.datasets import CIFAR10, FashionMNIST
 
 from scripts import config, utils
 from scripts.config import ClassifierDataset
-from scripts.interfaces import FashionMNISTModel
+from scripts.interfaces import TorchVisionDatasetModel
 
 
 LOGGER = utils.get_logger(__name__)
 
 
-class FashionMNISTClassifier(FashionMNISTModel, ABC):
+class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
     def __init__(self, dataset: ClassifierDataset) -> None:
-        """ Loads the specified dataset and stores it in instance attributes """
+        """ Loads the specified dataset and stores it in instance attributes. """
         self.dataset_type = dataset
 
         match self.dataset_type:
@@ -64,7 +64,7 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
                 hasattr(subclass, 'evaluate_model') and callable(subclass.evaluate_model))
 
     def display_dataset_information(self) -> None:
-        """ Logs information about the dataset currently in memory """
+        """ Logs information about the dataset currently in memory. """
         LOGGER.info(f'>>> Train Set Shape: X_train.shape={self.X_train.shape}, y_train.shape={self.y_train.shape}')
         LOGGER.info(f'>>> Train Set dtype: X_train.dtype={self.X_train.dtype}, y_train.dtype={self.y_train.dtype}')
         LOGGER.info(f'>>> Validation Set Shape: X_valid.shape={self.X_valid.shape}, y_valid.shape={self.y_valid.shape}')
@@ -73,8 +73,8 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         LOGGER.info(f'>>> Test Set dtype: X_test.dtype={self.X_test.dtype}, y_test.dtype={self.y_test.dtype}')
 
     def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
-        """ Displays some images from the dataset currently in memory.
-        Maximum number of images to be displayed is min(100, batch size)
+        """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
+        min(100, batch size).
 
         Arguments:
             num_samples (int, optional): the number of images to be displayed
@@ -96,19 +96,23 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
 
         # Plot random samples
         indices = [randrange(0, self.X_train.shape[0]) for _ in range(num_samples)]
-        idx = 1
+        indices.extend([-1] * (grid_size ** 2 - num_samples))  # Pad with -1 for empty spaces
 
-        for i in indices:
-            sample = self.X_train[i].permute(1, 2, 0)  # Image must be channels-last in matplotlib
-            plt.subplot(grid_size, grid_size, idx)
-            plt.imshow(sample, cmap=cmap)
-            plt.axis('off')
-            idx += 1
+        _, axes = plt.subplots(grid_size, grid_size, figsize=(8, 8))
+        for ax, i in zip(axes.flat, indices):
+            if i == -1:
+                ax.axis('off')
+            else:
+                sample = self.X_train[i].permute(1, 2, 0)  # Image must be channels-last in matplotlib
+                label = self.class_labels[self.y_train[i]]
+                ax.imshow(sample, cmap=cmap)
+                ax.set_title(label)
+                ax.axis('off')
 
         plt.show()
 
     def display_model(self) -> None:
-        """ Logs information about the model currently in memory """
+        """ Logs information about the model currently in memory. """
         if self.model is not None:
             # Pass the channel size as 3 when fine tuning a classifier
             # pretrained on 3-channel images, on a grayscale dataset
@@ -135,18 +139,17 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
         training_results: Dict[str, List[float]],
         testing_results: Dict[str, float]
     ) -> None:
-        """ Evaluates the model currently in memory by plotting training and validation
-        accuracy and loss and generating the classification report and confusion matrix
+        """ Saves the current training run results by plotting training and validation accuracy and loss,
+        and generating the classification report and confusion matrix.
 
         Arguments:
-            results_dir (Path): the path to where the training results will be saved
+            hyperparams (Dict[str, int]): dictionary containing the hyperparameters used during training
 
             training_results (Dict[str, List[float]]): dictionary containing the loss values and
-                the accuracy, precision, recall and F1 score results, both on the training and
-                validation sets
+                the accuracy, precision, recall and F1 score results, both on the training and validation sets
 
-            test_results (Dict[str, float]): dictionary containing the loss, accuracy, precision,
-                recall and F1 score results on the test set
+            test_results (Dict[str, float]): dictionary containing the loss, accuracy, precision, recall and F1 score
+                results on the test set
         """
         self._create_current_run_directory()
 
@@ -164,8 +167,10 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
             f.write(json.dumps(testing_results, indent=4))
 
         # Generate the classification report
-        predictions = self.model(self.X_test)
-        y_pred = torch.argmax(predictions, dim=1)
+        with torch.no_grad():
+            self.model.eval()
+            predictions = self.model(self.X_test)
+            y_pred = torch.argmax(predictions, dim=1)
 
         report = sk_metrics.classification_report(self.y_test, y_pred, target_names=self.class_labels)
         report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
@@ -201,7 +206,7 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
             f.write(f'Number of Epochs: {hyperparams["NUM_EPOCHS"]}\n')
 
     def export_model(self) -> None:
-        """ Exports the model currently in memory in ONNX format """
+        """ Exports the model currently in memory in ONNX format. """
         classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
         classifier_artifacts_path.mkdir()
         model_path = classifier_artifacts_path / 'model.onnx'
@@ -212,17 +217,18 @@ class FashionMNISTClassifier(FashionMNISTModel, ABC):
 
     def _create_current_run_directory(self) -> None:
         """ Computes the run index of the current classifier training, creates a directory for the corresponding
-        results and sets the name of the created directory as a class field """
+        results and sets the name of the created directory as a class field. """
+        current_run_cls_dataset = f"{self.__class__.__name__} {self.dataset_type.name}"
         training_runs = filter(lambda path: path.is_dir(), config.CLASSIFIER_RESULTS_PATH.iterdir())
         training_runs = list(map(lambda path: path.stem, training_runs))
-        relevant_runs = list(filter(lambda name: name.startswith(self.__class__.__name__), training_runs))
+        relevant_runs = list(filter(lambda name: name.startswith(current_run_cls_dataset), training_runs))
 
         if len(relevant_runs) == 0:
-            current_run_dir_name = f"{self.__class__.__name__} Run 1"
+            current_run_dir_name = f"{current_run_cls_dataset} Run 1"
         else:
             run_numbers = [name.split(" ")[-1] for name in relevant_runs]
             latest_run = max(list(map(int, run_numbers)))
-            current_run_dir_name = f"{self.__class__.__name__} Run {latest_run + 1}"
+            current_run_dir_name = f"{current_run_cls_dataset} Run {latest_run + 1}"
 
         current_run_dir_path = config.CLASSIFIER_RESULTS_PATH / current_run_dir_name
         current_run_dir_path.mkdir()

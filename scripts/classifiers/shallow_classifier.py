@@ -7,17 +7,16 @@ from torcheval.metrics import MulticlassAccuracy, MulticlassPrecision, Multiclas
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import FashionMNISTClassifier
-from scripts.models.cnn import CNN
+from scripts.classifiers import TorchVisionDatasetClassifier
+from scripts.models.snn import SNN
 
 LOGGER = utils.get_logger(__name__)
 
 
-class CNNOriginalClassifier(FashionMNISTClassifier):
-    """ Class representing a strong classifier for the original Fashion-MNIST dataset, using a convolutional neural
-     network """
+class SNNClassifier(TorchVisionDatasetClassifier):
+    """ Class representing a classifier for Torchvision datasets, using a shallow neural network """
     def preprocess_dataset(self) -> None:
-        """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
+        """ Preprocesses the dataset currently in memory by reshaping it and scaling the values. """
         if not self.preprocessed:
             if len(self.X_train.shape) == 3:
                 # If the loaded dataset is grayscale, add the channel dimension
@@ -30,7 +29,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
                 self.X_valid = self.X_valid.permute(0, 3, 1, 2)
                 self.X_test = self.X_test.permute(0, 3, 1, 2)
 
-            # Convert to float and rescale to [0, 1]
+            # Convert to float and scale to [0, 1]
             self.X_train = self.X_train.to(torch.float32) / 255.0
             self.X_valid = self.X_valid.to(torch.float32) / 255.0
             self.X_test = self.X_test.to(torch.float32) / 255.0
@@ -38,33 +37,28 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
             self.preprocessed = True
 
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute. The model used here is a
-         convolutional neural network, consisting of 3 convolutional blocks with pooling, dropout and L2 regularization,
-         followed by 2 dense layers with dropout and Adam as optimizer. Early stopping and TensorBoard callbacks are
-         also implemented """
-        self.model = CNN(self.dataset_type)
+        """ Defines the classifier's model structure and stores it as an instance attribute. The model used here is a
+        shallow neural network, consisting only of the Input and Output layers. """
+        self.model = SNN(self.dataset_type)
 
     def train_model(self) -> None:
-        """ Defines the training parameters and runs the training loop for the model currently in memory.
-        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metrics
-        are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
-        Precision, Recall, and F1-Score.
-        """
+        """ Defines the training parameters and runs the training loop for the model currently in memory. Vanilla SGD
+        is used as the optimizer, the loss function to be optimised is the Categorical Cross-entropy loss, and the
+        measured metrics are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
+        Precision, Recall, and F1-Score. An early stopping mechanism is used to prevent overfitting. """
         # Define the optimizer and loss functions
-        self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                          lr=config.CONVOLUTIONAL_CLF_HYPERPARAMS['LEARNING_RATE'],
-                                          weight_decay=0.0001 / config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'])
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config.SHALLOW_CLF_HYPERPARAMS['LEARNING_RATE'])
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
-        train_accuracy = MulticlassAccuracy()
-        valid_accuracy = MulticlassAccuracy()
-        train_precision = MulticlassPrecision()
-        valid_precision = MulticlassPrecision()
-        train_recall = MulticlassRecall()
-        valid_recall = MulticlassRecall()
-        train_f1 = MulticlassF1Score()
-        valid_f1 = MulticlassF1Score()
+        train_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        valid_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        train_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        valid_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        train_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        valid_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        train_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
+        valid_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         # Keep track of metrics for evaluation
         self.training_history: Dict[str, List[float]] = {
@@ -85,13 +79,13 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
         train_dataset = TensorDataset(self.X_train, self.y_train)
         valid_dataset = TensorDataset(self.X_valid, self.y_valid)
         train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                      batch_size=config.SHALLOW_CLF_HYPERPARAMS['BATCH_SIZE'],
                                       shuffle=True)
         valid_dataloader = DataLoader(dataset=valid_dataset,
-                                      batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                      batch_size=config.SHALLOW_CLF_HYPERPARAMS['BATCH_SIZE'])
 
         # Run the training loop
-        for epoch in range(1, config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'] + 1):
+        for epoch in range(1, config.SHALLOW_CLF_HYPERPARAMS['NUM_EPOCHS'] + 1):
             train_loss = 0.0
             self.model.train()
 
@@ -140,7 +134,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
                 curr_train_acc = self.training_history["accuracy"][-1]
                 curr_val_acc = self.training_history["val_accuracy"][-1]
 
-                LOGGER.info(f"Epoch: {epoch}/{config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS']}")
+                LOGGER.info(f"Epoch: {epoch}/{config.SHALLOW_CLF_HYPERPARAMS['NUM_EPOCHS']}")
                 LOGGER.info(f"> loss: {train_loss}\t val_loss: {valid_loss}")
                 LOGGER.info(f"> accuracy: {curr_train_acc}\t val_accuracy: {curr_val_acc}")
 
@@ -155,7 +149,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
                     early_stopping_counter += 1
                     LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
 
-                if early_stopping_counter == config.CONVOLUTIONAL_CLF_HYPERPARAMS['EARLY_STOPPING_TOLERANCE']:
+                if early_stopping_counter == config.SHALLOW_CLF_HYPERPARAMS['EARLY_STOPPING_TOLERANCE']:
                     LOGGER.info(">> Training terminated due to early stopping!")
                     break
 
@@ -165,10 +159,10 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
         """ Evaluates the model currently in memory by running it on the testing set. """
         # Define the loss function and evaluation metrics
         loss = nn.CrossEntropyLoss()
-        accuracy = MulticlassAccuracy()
-        precision = MulticlassPrecision()
-        recall = MulticlassRecall()
-        f1_score = MulticlassF1Score()
+        accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         self.evaluation_results: Dict[str, float] = {
             "loss": 0.0,
@@ -181,7 +175,7 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
         # Define test DataLoader
         test_dataset = TensorDataset(self.X_test, self.y_test)
         test_dataloader = DataLoader(dataset=test_dataset,
-                                     batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                     batch_size=config.SHALLOW_CLF_HYPERPARAMS['BATCH_SIZE'])
 
         # Gradient computation is not required during evaluation
         with torch.no_grad():
@@ -208,6 +202,6 @@ class CNNOriginalClassifier(FashionMNISTClassifier):
             LOGGER.info(self.evaluation_results)
 
     def save_results(self) -> None:
-        """ Evaluates the model currently in memory by plotting training and validation accuracy and loss
-        and generating the classification report and confusion matrix """
-        super().save_results(config.CONVOLUTIONAL_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)
+        """ Saves the current training run results by plotting training and validation accuracy and loss and generating
+        the classification report and confusion matrix. """
+        super().save_results(config.SHALLOW_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)

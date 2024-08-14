@@ -1,6 +1,6 @@
 ipykernel
 matplotlib == 3.9.0
-onnx == 1.16.2
+onnx == 1.16.1
 onnxscript
 scikit-learn == 1.5.1
 torch == 2.3.1

@@ -8,17 +8,17 @@ from torcheval.metrics import MulticlassAccuracy, MulticlassPrecision, Multiclas
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import FashionMNISTClassifier
+from scripts.classifiers import TorchVisionDatasetClassifier
 from scripts.models.efficient_net import EfficientNet
 
 LOGGER = utils.get_logger(__name__)
 
 
-class EfficientNetOriginalClassifier(FashionMNISTClassifier):
-    """ Class representing a very strong classifier for the original Fashion-MNIST dataset,
-    using the transfer learning approach """
+class EfficientNetClassifier(TorchVisionDatasetClassifier):
+    """ Class representing a classifier for Torchvision datasets, using the transfer learning approach """
     def preprocess_dataset(self) -> None:
-        """ Preprocesses the dataset currently in memory by reshaping it and encoding the labels """
+        """ Preprocesses the dataset currently in memory by reshaping it, encoding the labels, and applying the
+        preprocessing operations used in the EfficientNet pre-trained network. """
         if not self.preprocessed:
             if len(self.X_train.shape) == 3:
                 # If the loaded dataset is grayscale, add the channel dimension
@@ -48,7 +48,7 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
             self.X_valid = F.interpolate(self.X_valid, size=(224, 224), mode='bicubic')
             self.X_test = F.interpolate(self.X_test, size=(224, 224), mode='bicubic')
 
-            # Convert to float and rescale to [0, 1]
+            # Convert to float and scale to [0, 1]
             self.X_train = self.X_train.to(torch.float32) / 255.0
             self.X_valid = self.X_valid.to(torch.float32) / 255.0
             self.X_test = self.X_test.to(torch.float32) / 255.0
@@ -70,17 +70,16 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
             self.preprocessed = True
 
     def build_model(self) -> None:
-        """ Defines the classifier model structure and stores it as an instance attribute. The model used here is the
+        """ Defines the classifier's model structure and stores it as an instance attribute. The model used here is the
         headless EfficientNetB0 pretrained network, with a new classifier head consisting of Dropout and the Output
-        layer. Early stopping and TensorBoard callbacks are also implemented """
+        layer. """
         self.model = EfficientNet(self.dataset_type)
 
     def train_model(self) -> None:
-        """ Defines the training parameters and runs the training loop for the model currently in memory.
-        The loss function to be optimised is the Categorical Cross-entropy loss and the measured metrics
-        are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
-        Precision, Recall, and F1-Score.
-        """
+        """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
+        as the optimizer, the loss function to be optimised is the Categorical Cross-entropy loss, and the measured
+        metrics are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
+        Precision, Recall, and F1-Score. An early stopping mechanism is used to prevent overfitting. """
         # Define the optimizer and loss functions
         self.optimizer = torch.optim.Adam(self.model.parameters(),
                                           lr=config.EFFICIENTNET_CLF_HYPERPARAMS['LEARNING_RATE'],
@@ -88,14 +87,14 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
-        train_accuracy = MulticlassAccuracy()
-        valid_accuracy = MulticlassAccuracy()
-        train_precision = MulticlassPrecision()
-        valid_precision = MulticlassPrecision()
-        train_recall = MulticlassRecall()
-        valid_recall = MulticlassRecall()
-        train_f1 = MulticlassF1Score()
-        valid_f1 = MulticlassF1Score()
+        train_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        valid_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        train_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        valid_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        train_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        valid_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        train_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
+        valid_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         # Keep track of metrics for evaluation
         self.training_history: Dict[str, List[float]] = {
@@ -196,10 +195,10 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
         """ Evaluates the model currently in memory by running it on the testing set. """
         # Define the loss function and evaluation metrics
         loss = nn.CrossEntropyLoss()
-        accuracy = MulticlassAccuracy()
-        precision = MulticlassPrecision()
-        recall = MulticlassRecall()
-        f1_score = MulticlassF1Score()
+        accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
+        precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
+        recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
+        f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         self.evaluation_results: Dict[str, float] = {
             "loss": 0.0,
@@ -239,6 +238,6 @@ class EfficientNetOriginalClassifier(FashionMNISTClassifier):
             LOGGER.info(self.evaluation_results)
 
     def save_results(self) -> None:
-        """ Evaluates the model currently in memory by plotting training and validation accuracy and loss
-        and generating the classification report and confusion matrix """
+        """ Saves the current training run results by plotting training and validation accuracy and loss and generating
+        the classification report and confusion matrix. """
         super().save_results(config.EFFICIENTNET_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)
