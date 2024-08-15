@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Dict, List
 
 import torch
@@ -74,6 +75,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         headless EfficientNetB0 pretrained network, with a new classifier head consisting of Dropout and the Output
         layer. """
         self.model = EfficientNet(self.dataset_type)
+        self.hyperparams = copy(config.EFFICIENTNET_CLF_HYPERPARAMS)
 
     def train_model(self) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
@@ -82,8 +84,8 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         Precision, Recall, and F1-Score. An early stopping mechanism is used to prevent overfitting. """
         # Define the optimizer and loss functions
         self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                          lr=config.EFFICIENTNET_CLF_HYPERPARAMS['LEARNING_RATE'],
-                                          weight_decay=0.01 / config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS'])
+                                          lr=self.hyperparams['LEARNING_RATE'],
+                                          weight_decay=0.01 / self.hyperparams['NUM_EPOCHS'])
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
@@ -115,13 +117,13 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         train_dataset = TensorDataset(self.X_train, self.y_train)
         valid_dataset = TensorDataset(self.X_valid, self.y_valid)
         train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_size=config.EFFICIENTNET_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                      batch_size=self.hyperparams['BATCH_SIZE'],
                                       shuffle=True)
         valid_dataloader = DataLoader(dataset=valid_dataset,
-                                      batch_size=config.EFFICIENTNET_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                      batch_size=self.hyperparams['BATCH_SIZE'])
 
         # Run the training loop
-        for epoch in range(1, config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS'] + 1):
+        for epoch in range(1, self.hyperparams['NUM_EPOCHS'] + 1):
             train_loss = 0.0
             self.model.train()
 
@@ -170,7 +172,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
                 curr_train_acc = self.training_history["accuracy"][-1]
                 curr_val_acc = self.training_history["val_accuracy"][-1]
 
-                LOGGER.info(f"Epoch: {epoch}/{config.EFFICIENTNET_CLF_HYPERPARAMS['NUM_EPOCHS']}")
+                LOGGER.info(f"Epoch: {epoch}/{self.hyperparams['NUM_EPOCHS']}")
                 LOGGER.info(f"> loss: {train_loss}\t val_loss: {valid_loss}")
                 LOGGER.info(f"> accuracy: {curr_train_acc}\t val_accuracy: {curr_val_acc}")
 
@@ -185,7 +187,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
                     early_stopping_counter += 1
                     LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
 
-                if early_stopping_counter == config.EFFICIENTNET_CLF_HYPERPARAMS['EARLY_STOPPING_TOLERANCE']:
+                if early_stopping_counter == self.hyperparams['EARLY_STOPPING_TOLERANCE']:
                     LOGGER.info(">> Training terminated due to early stopping!")
                     break
 
@@ -211,7 +213,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         # Define test DataLoader
         test_dataset = TensorDataset(self.X_test, self.y_test)
         test_dataloader = DataLoader(dataset=test_dataset,
-                                     batch_size=config.EFFICIENTNET_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                     batch_size=self.hyperparams['BATCH_SIZE'])
 
         # Gradient computation is not required during evaluation
         with torch.no_grad():
@@ -236,8 +238,3 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
             self.evaluation_results["f1-score"] = f1_score.compute().item()
 
             LOGGER.info(self.evaluation_results)
-
-    def save_results(self) -> None:
-        """ Saves the current training run results by plotting training and validation accuracy and loss and generating
-        the classification report and confusion matrix. """
-        super().save_results(config.EFFICIENTNET_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)

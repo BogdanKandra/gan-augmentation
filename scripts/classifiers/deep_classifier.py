@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Dict, List
 
 import torch
@@ -40,6 +41,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         """ Defines the classifier's model structure and stores it as an instance attribute. The model used here is a
         deep neural network, consisting of the Input and Output layers and 3 hidden layers in between. """
         self.model = DNN(self.dataset_type)
+        self.hyperparams = copy(config.DEEP_CLF_HYPERPARAMS)
 
     def train_model(self) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Vanilla SGD
@@ -47,7 +49,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         measured metrics are Accuracy (which is appropriate for our problem, because the dataset classes are balanced),
         Precision, Recall, and F1-Score. An early stopping mechanism is used to prevent overfitting. """
         # Define the optimizer and loss functions
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config.DEEP_CLF_HYPERPARAMS['LEARNING_RATE'])
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.hyperparams['LEARNING_RATE'])
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
@@ -79,13 +81,13 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         train_dataset = TensorDataset(self.X_train, self.y_train)
         valid_dataset = TensorDataset(self.X_valid, self.y_valid)
         train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_size=config.DEEP_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                      batch_size=self.hyperparams['BATCH_SIZE'],
                                       shuffle=True)
         valid_dataloader = DataLoader(dataset=valid_dataset,
-                                      batch_size=config.DEEP_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                      batch_size=self.hyperparams['BATCH_SIZE'])
 
         # Run the training loop
-        for epoch in range(1, config.DEEP_CLF_HYPERPARAMS['NUM_EPOCHS'] + 1):
+        for epoch in range(1, self.hyperparams['NUM_EPOCHS'] + 1):
             train_loss = 0.0
             self.model.train()
 
@@ -134,7 +136,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
                 curr_train_acc = self.training_history["accuracy"][-1]
                 curr_val_acc = self.training_history["val_accuracy"][-1]
 
-                LOGGER.info(f"Epoch: {epoch}/{config.DEEP_CLF_HYPERPARAMS['NUM_EPOCHS']}")
+                LOGGER.info(f"Epoch: {epoch}/{self.hyperparams['NUM_EPOCHS']}")
                 LOGGER.info(f"> loss: {train_loss}\t val_loss: {valid_loss}")
                 LOGGER.info(f"> accuracy: {curr_train_acc}\t val_accuracy: {curr_val_acc}")
 
@@ -149,7 +151,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
                     early_stopping_counter += 1
                     LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
 
-                if early_stopping_counter == config.DEEP_CLF_HYPERPARAMS['EARLY_STOPPING_TOLERANCE']:
+                if early_stopping_counter == self.hyperparams['EARLY_STOPPING_TOLERANCE']:
                     LOGGER.info(">> Training terminated due to early stopping!")
                     break
 
@@ -175,7 +177,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         # Define test DataLoader
         test_dataset = TensorDataset(self.X_test, self.y_test)
         test_dataloader = DataLoader(dataset=test_dataset,
-                                     batch_size=config.DEEP_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                     batch_size=self.hyperparams['BATCH_SIZE'])
 
         # Gradient computation is not required during evaluation
         with torch.no_grad():
@@ -200,8 +202,3 @@ class DNNClassifier(TorchVisionDatasetClassifier):
             self.evaluation_results["f1-score"] = f1_score.compute().item()
 
             LOGGER.info(self.evaluation_results)
-
-    def save_results(self) -> None:
-        """ Saves the current training run results by plotting training and validation accuracy and loss and generating
-        the classification report and confusion matrix. """
-        super().save_results(config.DEEP_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)
