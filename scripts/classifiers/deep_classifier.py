@@ -167,11 +167,11 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         self.evaluation_results: Dict[str, float] = {
-            "loss": 0.0,
-            "accuracy": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1-score": 0.0,
+            "test_loss": 0.0,
+            "test_accuracy": 0.0,
+            "test_precision": 0.0,
+            "test_recall": 0.0,
+            "test_f1-score": 0.0,
         }
 
         # Define test DataLoader
@@ -195,10 +195,10 @@ class DNNClassifier(TorchVisionDatasetClassifier):
 
                 test_loss += batch_loss.item() / len(self.X_test)
 
-            self.evaluation_results["loss"] = test_loss
-            self.evaluation_results["accuracy"] = accuracy.compute().item()
-            self.evaluation_results["precision"] = precision.compute().item()
-            self.evaluation_results["recall"] = recall.compute().item()
-            self.evaluation_results["f1-score"] = f1_score.compute().item()
+            self.evaluation_results["test_loss"] = test_loss
+            self.evaluation_results["test_accuracy"] = accuracy.compute().item()
+            self.evaluation_results["test_precision"] = precision.compute().item()
+            self.evaluation_results["test_recall"] = recall.compute().item()
+            self.evaluation_results["test_f1-score"] = f1_score.compute().item()
 
             LOGGER.info(self.evaluation_results)
