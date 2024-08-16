@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Dict, List
 
 import torch
@@ -41,6 +42,7 @@ class CNNClassifier(TorchVisionDatasetClassifier):
         convolutional neural network, consisting of 3 convolutional blocks (with pooling, dropout and L2
         regularization), followed by a decoder block (composed of 2 linear layers with dropout). """
         self.model = CNN(self.dataset_type)
+        self.hyperparams = copy(config.CONVOLUTIONAL_CLF_HYPERPARAMS)
 
     def train_model(self) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
@@ -49,8 +51,8 @@ class CNNClassifier(TorchVisionDatasetClassifier):
         Precision, Recall, and F1-Score. An early stopping mechanism is used to prevent overfitting. """
         # Define the optimizer and loss functions
         self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                          lr=config.CONVOLUTIONAL_CLF_HYPERPARAMS['LEARNING_RATE'],
-                                          weight_decay=0.0001 / config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'])
+                                          lr=self.hyperparams['LEARNING_RATE'],
+                                          weight_decay=0.0001 / self.hyperparams['NUM_EPOCHS'])
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
@@ -82,13 +84,13 @@ class CNNClassifier(TorchVisionDatasetClassifier):
         train_dataset = TensorDataset(self.X_train, self.y_train)
         valid_dataset = TensorDataset(self.X_valid, self.y_valid)
         train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'],
+                                      batch_size=self.hyperparams['BATCH_SIZE'],
                                       shuffle=True)
         valid_dataloader = DataLoader(dataset=valid_dataset,
-                                      batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                      batch_size=self.hyperparams['BATCH_SIZE'])
 
         # Run the training loop
-        for epoch in range(1, config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS'] + 1):
+        for epoch in range(1, self.hyperparams['NUM_EPOCHS'] + 1):
             train_loss = 0.0
             self.model.train()
 
@@ -137,7 +139,7 @@ class CNNClassifier(TorchVisionDatasetClassifier):
                 curr_train_acc = self.training_history["accuracy"][-1]
                 curr_val_acc = self.training_history["val_accuracy"][-1]
 
-                LOGGER.info(f"Epoch: {epoch}/{config.CONVOLUTIONAL_CLF_HYPERPARAMS['NUM_EPOCHS']}")
+                LOGGER.info(f"Epoch: {epoch}/{self.hyperparams['NUM_EPOCHS']}")
                 LOGGER.info(f"> loss: {train_loss}\t val_loss: {valid_loss}")
                 LOGGER.info(f"> accuracy: {curr_train_acc}\t val_accuracy: {curr_val_acc}")
 
@@ -152,7 +154,7 @@ class CNNClassifier(TorchVisionDatasetClassifier):
                     early_stopping_counter += 1
                     LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
 
-                if early_stopping_counter == config.CONVOLUTIONAL_CLF_HYPERPARAMS['EARLY_STOPPING_TOLERANCE']:
+                if early_stopping_counter == self.hyperparams['EARLY_STOPPING_TOLERANCE']:
                     LOGGER.info(">> Training terminated due to early stopping!")
                     break
 
@@ -168,17 +170,17 @@ class CNNClassifier(TorchVisionDatasetClassifier):
         f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
 
         self.evaluation_results: Dict[str, float] = {
-            "loss": 0.0,
-            "accuracy": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1-score": 0.0,
+            "test_loss": 0.0,
+            "test_accuracy": 0.0,
+            "test_precision": 0.0,
+            "test_recall": 0.0,
+            "test_f1-score": 0.0,
         }
 
         # Define test DataLoader
         test_dataset = TensorDataset(self.X_test, self.y_test)
         test_dataloader = DataLoader(dataset=test_dataset,
-                                     batch_size=config.CONVOLUTIONAL_CLF_HYPERPARAMS['BATCH_SIZE'])
+                                     batch_size=self.hyperparams['BATCH_SIZE'])
 
         # Gradient computation is not required during evaluation
         with torch.no_grad():
@@ -196,15 +198,10 @@ class CNNClassifier(TorchVisionDatasetClassifier):
 
                 test_loss += batch_loss.item() / len(self.X_test)
 
-            self.evaluation_results["loss"] = test_loss
-            self.evaluation_results["accuracy"] = accuracy.compute().item()
-            self.evaluation_results["precision"] = precision.compute().item()
-            self.evaluation_results["recall"] = recall.compute().item()
-            self.evaluation_results["f1-score"] = f1_score.compute().item()
+            self.evaluation_results["test_loss"] = test_loss
+            self.evaluation_results["test_accuracy"] = accuracy.compute().item()
+            self.evaluation_results["test_precision"] = precision.compute().item()
+            self.evaluation_results["test_recall"] = recall.compute().item()
+            self.evaluation_results["test_f1-score"] = f1_score.compute().item()
 
             LOGGER.info(self.evaluation_results)
-
-    def save_results(self) -> None:
-        """ Saves the current training run results by plotting training and validation accuracy and loss and generating
-        the classification report and confusion matrix. """
-        super().save_results(config.CONVOLUTIONAL_CLF_HYPERPARAMS, self.training_history, self.evaluation_results)

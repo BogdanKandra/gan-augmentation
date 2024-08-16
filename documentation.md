@@ -1,8 +1,4 @@
 # TODO
-- Add stuff learned from Krish Naik video:
-	- Integrate MlFlow
-	- Watch video again
-
 - save_results() optimization when the model is evaluated on the test set
 - Check the weight decay in optimizers
 - Solve EfficientNet problems
@@ -35,7 +31,7 @@
 - Analyze results
 
 - Write Jupyter Notebooks:
-	- 1 x Notebook for training and evaluating generator models
+	- 1 x Notebook (train_generator.ipynb) for training and evaluating generator models
 		- User chooses generator type (VanillaGAN / DCGAN / DDPM / DDIM)
 		- User chooses dataset (FashionMNIST / CIFAR-10)
 	- 1 x Notebook for running inference with a chosen generator model
