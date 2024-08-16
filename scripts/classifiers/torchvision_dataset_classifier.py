@@ -198,7 +198,11 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
 
     def mlflow_log(self, run_description: str) -> None:
-        """ Logs the current training results to MLflow. """
+        """ Logs the current training results to MLflow.
+
+        Arguments:
+            run_description (str): The description of the current run
+        """
         # Set the tracking server URI to point to the local server
         mlflow.set_tracking_uri(uri='http://127.0.0.1:8080')
 
@@ -212,33 +216,24 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         else:
             run_name = ' '.join(str(s) for s in self.results_subdirectory.split(' ')[2:])
 
-        with mlflow.start_run(run_name=run_name):
+        with mlflow.start_run(run_name=run_name, description=run_description):
             # Log the hyperparameters
             mlflow.log_params(self.hyperparams)
 
             # Log the metrics
-            mlflow.log_metric('train_loss', self.training_history['loss'][-1])
-            mlflow.log_metric('val_loss', self.training_history['val_loss'][-1])
-            mlflow.log_metric('test_loss', self.evaluation_results['loss'])
+            for epoch in range(1, len(self.training_history['loss']) + 1):
+                mlflow.log_metric('train_loss', self.training_history['loss'][epoch], step=epoch)
+                mlflow.log_metric('train_accuracy', self.training_history['accuracy'][epoch], step=epoch)
+                mlflow.log_metric('train_precision', self.training_history['precision'][epoch], step=epoch)
+                mlflow.log_metric('train_recall', self.training_history['recall'][epoch], step=epoch)
+                mlflow.log_metric('train_f1-score', self.training_history['f1-score'][epoch], step=epoch)
+                mlflow.log_metric('val_loss', self.training_history['val_loss'][epoch], step=epoch)
+                mlflow.log_metric('val_accuracy', self.training_history['val_accuracy'][epoch], step=epoch)
+                mlflow.log_metric('val_precision', self.training_history['val_precision'][epoch], step=epoch)
+                mlflow.log_metric('val_recall', self.training_history['val_recall'][epoch], step=epoch)
+                mlflow.log_metric('val_f1-score', self.training_history['val_f1-score'][epoch], step=epoch)
 
-            mlflow.log_metric('train_accuracy', self.training_history['accuracy'][-1])
-            mlflow.log_metric('val_accuracy', self.training_history['val_accuracy'][-1])
-            mlflow.log_metric('test_accuracy', self.evaluation_results['accuracy'])
-
-            mlflow.log_metric('train_precision', self.training_history['precision'][-1])
-            mlflow.log_metric('val_precision', self.training_history['val_precision'][-1])
-            mlflow.log_metric('test_precision', self.evaluation_results['precision'])
-
-            mlflow.log_metric('train_recall', self.training_history['recall'][-1])
-            mlflow.log_metric('val_recall', self.training_history['val_recall'][-1])
-            mlflow.log_metric('test_recall', self.evaluation_results['recall'])
-
-            mlflow.log_metric('train_f1-score', self.training_history['f1-score'][-1])
-            mlflow.log_metric('val_f1-score', self.training_history['val_f1-score'][-1])
-            mlflow.log_metric('test_f1-score', self.evaluation_results['f1-score'])
-
-            # Set a tag with the run description
-            mlflow.set_tag('Description', run_description)
+            mlflow.log_metrics(self.evaluation_results)
 
     def export_model(self) -> None:
         """ Exports the model currently in memory in ONNX format. """
