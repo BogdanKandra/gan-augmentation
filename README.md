@@ -20,8 +20,8 @@ Studying the utility of GANs and diffusion models in augmenting datasets used fo
     - Move the files from these three folders to the CUDA directory. These files should be stored in the corresponding bin, include, and lib folders within the CUDA toolkit directory
 - Install the appropriate version of PyTorch:
     - https://pytorch.org/
-    - Select your OS, programming language, and CUDA version, and remember the provided command
-    - Copy the index url and paste it at the top of the `requirements.txt` file, as: `--index-url https://url.com`
+    - Select your OS, programming language, and CUDA version, and copy the index url from the provided command
+    - Paste the copied index url at the top of the `requirements.txt` file, as: `--index-url https://url.com`
 
 <br>
 
@@ -37,6 +37,7 @@ Studying the utility of GANs and diffusion models in augmenting datasets used fo
     - `export GIT_PYTHON_REFRESH=quiet` (On Linux)
     - `set GIT_PYTHON_REFRESH=quiet` (On Windows)
 - Start a local MLflow tracking server (from the project root): `mlflow server --host 127.0.0.1 --port 8080`
+- Run the `test_gpu_functionality.ipynb` notebook for testing whether a GPU is available, and if PyTorch has access to it
 - Run the `train_classifier.ipynb` notebook for retraining any of the classifiers
 - Run the `train_generator.ipynb` notebook for retraining any of the generators
 - Open the MLflow UI at http://127.0.0.1:8080 to view the training results
