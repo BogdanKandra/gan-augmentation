@@ -3,6 +3,28 @@ Studying the utility of GANs and diffusion models in augmenting datasets used fo
 
 <br>
 
+## Steps for enabling GPU access for PyTorch
+- The following steps only apply to users having access to an Nvidia GPU
+- Download the driver compatible with your graphics card and follow the prompts to complete the installation:
+    - https://www.nvidia.com/en-us/drivers/
+    - Choose the Download Type as Game Ready Driver (GRD)
+    - Run `nvidia-smi` to check if the GPU supports CUDA. Remember the CUDA version used, if supported
+- Download and install the CUDA toolkit:
+    - https://developer.nvidia.com/cuda-toolkit-archive
+    - Choose a version that matches or does not exceed your CUDA version
+    - Remember the installation folder
+- Install the cuDNN library and move to the CUDA toolkit folder:
+    - https://developer.nvidia.com/cudnn
+    - Choose a version that matches your CUDA version
+    - After the download is complete, unzip the file. Inside, you will find three folders: `bin`, `include`, and `lib`
+    - Move the files from these three folders to the CUDA directory. These files should be stored in the corresponding bin, include, and lib folders within the CUDA toolkit directory
+- Install the appropriate version of PyTorch:
+    - https://pytorch.org/
+    - Select your OS, programming language, and CUDA version, and remember the provided command
+    - Copy the index url and paste it at the top of the `requirements.txt` file, as: `--index-url https://url.com`
+
+<br>
+
 ## Steps for running the project
 - Create a virtual environment for the project: `conda create -n <env_name> python=3.10`
 - Activate the virtual environment: `conda activate <env_name>`
