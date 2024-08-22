@@ -23,7 +23,18 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
     def __init__(self, dataset: ClassifierDataset) -> None:
         """ Loads the specified dataset and stores it in instance attributes. """
-        self.dataset_type = dataset
+        # Determine the device to be used for storing the data, model, and metrics
+        if torch.cuda.is_available():
+            self.device: torch.device = torch.device('cuda')
+            self.pin_memory: bool = True
+            self.pin_memory_device: str = self.device.type
+        else:
+            self.device: torch.device = torch.device('cpu')
+            self.pin_memory: bool = False
+            self.pin_memory_device: str = ''
+
+        # Load the specified dataset
+        self.dataset_type: ClassifierDataset = dataset
 
         match self.dataset_type:
             case ClassifierDataset.FASHION_MNIST:
@@ -40,12 +51,14 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         self.X_train, self.y_train = train_dataset.data, train_dataset.targets
         self.X_test, self.y_test = test_dataset.data, test_dataset.targets
 
+        # Convert numpy arrays to torch tensors and move to GPU if available
         if type(self.X_train) is np.ndarray:
-            self.X_train = torch.from_numpy(self.X_train)
-            self.X_test = torch.from_numpy(self.X_test)
-            self.y_train = torch.tensor(self.y_train)
-            self.y_test = torch.tensor(self.y_test)
+            self.X_train = torch.from_numpy(self.X_train).to(self.device)
+            self.X_test = torch.from_numpy(self.X_test).to(self.device)
+            self.y_train = torch.tensor(self.y_train).to(self.device)
+            self.y_test = torch.tensor(self.y_test).to(self.device)
 
+        # Split the training dataset into a training and validation set
         validation_size = int(config.VALID_SET_PERCENTAGE * len(self.X_train))
         self.X_valid = self.X_train[: validation_size]
         self.y_valid = self.y_train[: validation_size]
@@ -72,12 +85,18 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory. """
-        LOGGER.info(f'>>> Train Set Shape: X_train.shape={self.X_train.shape}, y_train.shape={self.y_train.shape}')
-        LOGGER.info(f'>>> Train Set dtype: X_train.dtype={self.X_train.dtype}, y_train.dtype={self.y_train.dtype}')
-        LOGGER.info(f'>>> Validation Set Shape: X_valid.shape={self.X_valid.shape}, y_valid.shape={self.y_valid.shape}')
-        LOGGER.info(f'>>> Validation Set dtype: X_valid.dtype={self.X_valid.dtype}, y_valid.dtype={self.y_valid.dtype}')
-        LOGGER.info(f'>>> Test Set Shape: X_test.shape={self.X_test.shape}, y_test.shape={self.y_test.shape}')
-        LOGGER.info(f'>>> Test Set dtype: X_test.dtype={self.X_test.dtype}, y_test.dtype={self.y_test.dtype}')
+        LOGGER.info(f'>>> Train Set Information:\n\tshape: X_train.shape={self.X_train.shape}, '
+                    f'y_train.shape={self.y_train.shape}\n\tdtype: X_train.dtype={self.X_train.dtype}, '
+                    f'y_train.dtype={self.y_train.dtype}\n\tdevice: X_train.device={self.X_train.device}, '
+                    f'y_train.device={self.y_train.device}')
+        LOGGER.info(f'>>> Validation Set Information:\n\tshape: X_valid.shape={self.X_valid.shape}, '
+                    f'y_valid.shape={self.y_valid.shape}\n\tdtype: X_valid.dtype={self.X_valid.dtype}, '
+                    f'y_valid.dtype={self.y_valid.dtype}\n\tdevice: X_valid.device={self.X_valid.device}, '
+                    f'y_valid.device={self.y_valid.device}')
+        LOGGER.info(f'>>> Test Set Information:\n\tshape: X_test.shape={self.X_test.shape}, '
+                    f'y_test.shape={self.y_test.shape}\n\tdtype: X_test.dtype={self.X_test.dtype}, '
+                    f'y_test.dtype={self.y_test.dtype}\n\tdevice: X_test.device={self.X_test.device}, '
+                    f'y_test.device={self.y_test.device}')
 
     def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
@@ -110,7 +129,8 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             if i == -1:
                 ax.axis('off')
             else:
-                sample = self.X_train[i].permute(1, 2, 0)  # Image must be channels-last in matplotlib
+                # Image must be on the CPU and channels-last for matplotlib
+                sample = self.X_train[i].to('cpu').permute(1, 2, 0)
                 label = self.class_labels[self.y_train[i]]
                 ax.imshow(sample, cmap=cmap)
                 ax.set_title(label)
@@ -135,6 +155,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
                 input_size=(1, *input_shape),
                 col_names=["input_size", "output_size", "num_params",
                            "params_percent", "kernel_size", "mult_adds", "trainable"],
+                device=self.device,
                 verbose=1
             )
         else:
@@ -240,7 +261,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
         classifier_artifacts_path.mkdir()
         model_path = classifier_artifacts_path / 'model.onnx'
-        dummy_input = torch.randn(1, *self.dataset_shape)
+        dummy_input = torch.randn(1, *self.dataset_shape, device=self.device)
         self.model.eval()
         onnx_program = torch.onnx.dynamo_export(self.model, dummy_input)
         onnx_program.save(str(model_path))
