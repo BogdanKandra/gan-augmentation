@@ -41,6 +41,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         """ Defines the classifier's model structure and stores it as an instance attribute. The model used here is a
         deep neural network, consisting of the Input and Output layers and 3 hidden layers in between. """
         self.model = DNN(self.dataset_type)
+        self.model.to(self.device)
         self.hyperparams = copy(config.DEEP_CLF_HYPERPARAMS)
 
     def train_model(self) -> None:
@@ -53,14 +54,14 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         self.loss = nn.CrossEntropyLoss()
 
         # Define the evaluation metrics
-        train_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
-        valid_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
-        train_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
-        valid_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
-        train_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
-        valid_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
-        train_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
-        valid_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
+        train_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels), device=self.device)
+        valid_accuracy = MulticlassAccuracy(num_classes=len(self.class_labels), device=self.device)
+        train_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro', device=self.device)
+        valid_precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro', device=self.device)
+        train_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro', device=self.device)
+        valid_recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro', device=self.device)
+        train_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro', device=self.device)
+        valid_f1 = MulticlassF1Score(num_classes=len(self.class_labels), average='macro', device=self.device)
 
         # Keep track of metrics for evaluation
         self.training_history: Dict[str, List[float]] = {
@@ -82,9 +83,13 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         valid_dataset = TensorDataset(self.X_valid, self.y_valid)
         train_dataloader = DataLoader(dataset=train_dataset,
                                       batch_size=self.hyperparams['BATCH_SIZE'],
-                                      shuffle=True)
+                                      shuffle=True,
+                                      pin_memory=self.pin_memory,
+                                      pin_memory_device=self.pin_memory_device)
         valid_dataloader = DataLoader(dataset=valid_dataset,
-                                      batch_size=self.hyperparams['BATCH_SIZE'])
+                                      batch_size=self.hyperparams['BATCH_SIZE'],
+                                      pin_memory=self.pin_memory,
+                                      pin_memory_device=self.pin_memory_device)
 
         # Run the training loop
         for epoch in range(1, self.hyperparams['NUM_EPOCHS'] + 1):
@@ -92,6 +97,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
             self.model.train()
 
             for X_batch, y_batch in tqdm(train_dataloader):
+                X_batch, y_batch = X_batch.to(self.device), y_batch.to(self.device)
                 self.optimizer.zero_grad()
                 y_pred = self.model(X_batch)
                 batch_loss = self.loss(y_pred, y_batch)
@@ -117,6 +123,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
                 self.model.eval()
 
                 for X_batch, y_batch in tqdm(valid_dataloader):
+                    X_batch, y_batch = X_batch.to(self.device), y_batch.to(self.device)
                     y_pred = self.model(X_batch)
                     batch_loss = self.loss(y_pred, y_batch)
 
@@ -155,16 +162,25 @@ class DNNClassifier(TorchVisionDatasetClassifier):
                     LOGGER.info(">> Training terminated due to early stopping!")
                     break
 
+            # train_accuracy.reset()
+            # train_precision.reset()
+            # train_recall.reset()
+            # train_f1.reset()
+            # valid_accuracy.reset()
+            # valid_precision.reset()
+            # valid_recall.reset()
+            # valid_f1.reset()
+
         LOGGER.info(self.training_history)
 
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by running it on the testing set. """
         # Define the loss function and evaluation metrics
         loss = nn.CrossEntropyLoss()
-        accuracy = MulticlassAccuracy(num_classes=len(self.class_labels))
-        precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro')
-        recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro')
-        f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro')
+        accuracy = MulticlassAccuracy(num_classes=len(self.class_labels), device=self.device)
+        precision = MulticlassPrecision(num_classes=len(self.class_labels), average='macro', device=self.device)
+        recall = MulticlassRecall(num_classes=len(self.class_labels), average='macro', device=self.device)
+        f1_score = MulticlassF1Score(num_classes=len(self.class_labels), average='macro', device=self.device)
 
         self.evaluation_results: Dict[str, float] = {
             "test_loss": 0.0,
@@ -177,7 +193,9 @@ class DNNClassifier(TorchVisionDatasetClassifier):
         # Define test DataLoader
         test_dataset = TensorDataset(self.X_test, self.y_test)
         test_dataloader = DataLoader(dataset=test_dataset,
-                                     batch_size=self.hyperparams['BATCH_SIZE'])
+                                     batch_size=self.hyperparams['BATCH_SIZE'],
+                                     pin_memory=self.pin_memory,
+                                     pin_memory_device=self.pin_memory_device)
 
         # Gradient computation is not required during evaluation
         with torch.no_grad():
@@ -185,6 +203,7 @@ class DNNClassifier(TorchVisionDatasetClassifier):
             self.model.eval()
 
             for X_batch, y_batch in tqdm(test_dataloader):
+                X_batch, y_batch = X_batch.to(self.device), y_batch.to(self.device)
                 y_pred = self.model(X_batch)
                 batch_loss = loss(y_pred, y_batch)
 
