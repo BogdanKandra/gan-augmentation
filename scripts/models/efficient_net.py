@@ -21,7 +21,7 @@ class EfficientNet(nn.Module):
             case config.ClassifierDataset.CIFAR_10:
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:
-                raise ValueError('Unimplemented dataset type')
+                raise ValueError('Unsupported dataset type')
 
         self.feature_extractor = efficientnet_b0(weights=EfficientNet_B0_Weights.IMAGENET1K_V1)
         for param in self.feature_extractor.parameters():
