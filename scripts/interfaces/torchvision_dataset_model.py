@@ -21,8 +21,12 @@ class TorchVisionDatasetModel(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def build_model(self) -> None:
-        """ Defines the classifier's / generator's model structure and stores it as an instance attribute. """
+    def build_model(self, compute_batch_size: bool = False) -> None:
+        """ Defines the classifier's / generator's model structure and stores it as an instance attribute.
+
+        Arguments:
+            compute_batch_size (bool, optional): whether to compute the maximum batch size for this model and device
+        """
         raise NotImplementedError
 
     @abstractmethod
