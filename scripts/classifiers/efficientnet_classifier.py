@@ -70,13 +70,25 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
 
             self.preprocessed = True
 
-    def build_model(self) -> None:
+    def build_model(self, compute_batch_size: bool = False) -> None:
         """ Defines the classifier's model structure and stores it as an instance attribute. The model used here is the
         headless EfficientNetB0 pretrained network, with a new classifier head consisting of Dropout and the Output
-        layer. """
+        layer.
+
+        Arguments:
+            compute_batch_size (bool, optional): whether to compute the maximum batch size for this model and device
+        """
         self.model = EfficientNet(self.dataset_type)
         self.model.to(self.device)
         self.hyperparams = copy(config.EFFICIENTNET_CLF_HYPERPARAMS)
+
+        if compute_batch_size and self.device is torch.device('cuda'):
+            LOGGER.info('>>> Searching for the optimal batch size for this GPU...')
+            dataset_size = sum(map(len, [self.X_train, self.X_valid, self.X_test]))
+            self.hyperparams['BATCH_SIZE'] = utils.get_maximum_batch_size(self.model, self.device,
+                                                                          input_shape=self.X_train.shape[1:],
+                                                                          output_shape=self.y_train.shape[1:],
+                                                                          dataset_size=dataset_size)
 
     def train_model(self) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
