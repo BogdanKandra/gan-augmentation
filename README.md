@@ -21,7 +21,8 @@ Studying the utility of GANs and diffusion models in augmenting datasets used fo
 - Install the appropriate version of PyTorch:
     - https://pytorch.org/
     - Select your OS, programming language, and CUDA version, and copy the index url from the provided command
-    - Paste the copied index url at the top of the `requirements.txt` file, as: `--index-url https://url.com`
+    - Uncomment the entry at the top of the `requirements.txt` file, and replace `<index_url>` with the copied index url: `--index-url <index_url>`
+- If reporting GPU metrics in MLflow is also needed, uncommment the `pynvml` requirement in `requirements.txt`
 
 <br>
 
@@ -40,6 +41,9 @@ Studying the utility of GANs and diffusion models in augmenting datasets used fo
 - Run the `test_gpu_functionality.ipynb` notebook for testing whether a GPU is available, and if PyTorch has access to it
 - Run the `train_classifier.ipynb` notebook for retraining any of the classifiers
 - Run the `train_generator.ipynb` notebook for retraining any of the generators
+- Run `nvidia-smi` to manually monitor the GPU utilization during training:
+    - `nvidia-smi -l <n_seconds>` updates the output every `n_seconds`
+    - `nvidia-smi -lms <n_milliseconds>` updates the output every `n_milliseconds`
 - Open the MLflow UI at http://127.0.0.1:8080 to view the training results
 - Alternatively, view the results in the `results/classifiers` and `results/generators` directories
 
