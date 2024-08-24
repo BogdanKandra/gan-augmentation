@@ -237,7 +237,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         else:
             run_name = ' '.join(str(s) for s in self.results_subdirectory.split(' ')[2:])
 
-        with mlflow.start_run(run_name=run_name, description=run_description):
+        with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True):
             # Log the hyperparameters
             mlflow.log_params(self.hyperparams)
 
