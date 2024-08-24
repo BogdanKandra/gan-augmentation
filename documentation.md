@@ -1,14 +1,4 @@
 # TODO
-- save_results() optimization when the model is evaluated on the test set
-- Check the weight decay in optimizers
-- Solve EfficientNet problems
-- Save the model when early stopping
-
-- Prepare training on GPU:
-	- Write notebook for testing GPU availability
-	- Update code so that it is device-aware
-	- Update training notebooks so that they also use the GPU if available
-
 - Implement GANs:
 	- VanillaGAN
 	- DCGAN
@@ -39,14 +29,33 @@
 	- 1 x Notebook for testing GPU availability
 
 
+- TODO MISC:
+    - Study performance in deep learning:
+        https://docs.nvidia.com/deeplearning/performance/index.html
+    - Study the effects of weight decay in optimizers (and how to apply it to our models)
+    - Study the effects of batch size on training:
+        https://towardsdatascience.com/epoch-vs-iterations-vs-batch-size-4dfb9c7ce9c9
+        https://medium.com/mini-distill/effect-of-batch-size-on-training-dynamics-21c14f7a716e
+        https://wandb.ai/ayush-thakur/dl-question-bank/reports/What-s-the-Optimal-Batch-Size-to-Train-a-Neural-Network---VmlldzoyMDkyNDU
+        https://arxiv.org/abs/1609.04836
+        https://arxiv.org/abs/1711.00489
+    - Don't divide the loss by the batch size when training ???
+    - Also save result artifacts in MLflow instead of the `results` directory
+    - save_results() optimization when the model is evaluated on the test set
+    - Solve EfficientNet performance problems
+    - Save the best model when early stopping
+    - Use the PyTorch profiler: https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html
+
+- Deployment / inference of model ideas:
+    - TorchServe: https://pytorch.org/serve/
+    - Run inference with ONNX Runtime (Check third ONNX reference)
+    - torch.compile and torch.jit.script: https://discuss.pytorch.org/t/efficient-way-to-train-on-gpu-and-inference-on-cpu/185040
 - Update README file with details on how to train, perform inference and other functionalities
 - Integrate TensorBoard ???
 - Add L2 regularization to the CNN classifier?    # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 - Maybe create a class structure for representing the training data ?
-- Add inference function with ONNX Runtime (Check third ONNX reference in documentation)
-- Add quantization function
+- Implement quantization? - https://huggingface.co/docs/transformers/quantization/overview
 - Write tests for the classifier scripts ???
-- Deployment of model - https://pytorch.org/serve/
 
 <br>
 
@@ -123,12 +132,37 @@ The tests directory contains unit tests for the scripts.
 <br>
 
 # References
+## Misc
 - https://www.quora.com/Do-convolutional-neural-networks-learn-to-be-spatially-invariant-at-the-last-layer-of-the-network-fully-connected-layer-Convolution-layers-produce-spatially-equivariant-output-but-what-about-the-spatial-invariance
 - https://towardsdatascience.com/translational-invariance-vs-translational-equivariance-f9fbc8fca63a
 - https://pyimagesearch.com/2019/02/11/fashion-mnist-with-keras-and-deep-learning/  (Training CNN on Fashion-MNIST)
 - https://medium.com/@mjbhobe/classifying-fashion-with-a-keras-cnn-achieving-94-accuracy-part-2-a5bd7a4e7e5a  (Training CNN on Fashion-MNIST)
-- https://keras.io/examples/vision/image_classification_efficientnet_fine_tuning/#transfer-learning-from-pretrained-weights  (Transfer Learning)
 
-- https://pytorch.org/tutorials/beginner/onnx/export_simple_model_to_onnx_tutorial.html (ONNX export)
-- https://learn.microsoft.com/en-us/windows/ai/windows-ml/tutorials/pytorch-convert-model (ONNX export)
-- https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html (ONNX export)
+## PyTorch tutorials
+- https://pytorch.org/tutorials/beginner/introyt/trainingyt.html
+- https://www.kaggle.com/code/adrynh/pytorch-tutorial-with-fashion-mnist
+- https://www.learnpytorch.io/
+
+## Transfer Learning
+- https://keras.io/examples/vision/image_classification_efficientnet_fine_tuning/#transfer-learning-from-pretrained-weights
+- https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
+
+## ONNX export
+- https://pytorch.org/tutorials/beginner/onnx/export_simple_model_to_onnx_tutorial.html
+- https://learn.microsoft.com/en-us/windows/ai/windows-ml/tutorials/pytorch-convert-model
+- https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html
+
+## MLflow
+- https://mlflow.org/docs/latest/getting-started/intro-quickstart/index.html
+- https://mlflow.org/docs/latest/system-metrics/index.html
+- https://towardsdatascience.com/5-tips-for-mlflow-experiment-tracking-c70ae117b03f
+
+## GPU training
+- https://huggingface.co/docs/transformers/model_memory_anatomy
+- https://huggingface.co/docs/transformers/perf_train_gpu_one
+- https://towardsdatascience.com/a-batch-too-large-finding-the-batch-size-that-fits-on-gpus-aef70902a9f1
+- https://wandb.ai/ayush-thakur/dl-question-bank/reports/How-To-Check-If-PyTorch-Is-Using-The-GPU--VmlldzoyMDQ0NTU
+- https://wandb.ai/wandb/common-ml-errors/reports/How-To-Use-GPU-with-PyTorch---VmlldzozMzAxMDk
+- https://stackoverflow.com/questions/48152674/how-do-i-check-if-pytorch-is-using-the-gpu/48152675#48152675
+- https://medium.com/@0429shen/cant-train-deep-learning-models-using-gpu-in-pytorch-even-with-a-graphics-card-f61505ed758e
+- https://www.reddit.com/r/pytorch/comments/11izx0i/using_my_gpu_to_train/
