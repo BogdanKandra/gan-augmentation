@@ -4,7 +4,6 @@ from math import sqrt
 from random import randrange
 
 import matplotlib.pyplot as plt
-import mlflow
 import numpy as np
 import sklearn.metrics as sk_metrics
 import torch
@@ -72,9 +71,10 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         self.optimizer = None
         self.loss = None
 
+        self.results_subdirectory = None
+        self.run_id = None
         self.training_history = {}
         self.evaluation_results = {}
-        self.results_subdirectory = None
 
     @classmethod
     def __subclasshook__(cls, subclass) -> bool:
@@ -164,8 +164,6 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     def save_results(self) -> None:
         """ Saves the current training run results by plotting training and validation accuracy and loss,
         and generating the classification report and confusion matrix. """
-        self._create_current_run_directory()
-
         # Generate a file containing model information and parameters
         training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Information.txt'
         with open(training_info_path, 'w') as f:
@@ -218,44 +216,6 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
         cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(len(self.class_labels))))
         utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
 
-    def mlflow_log(self, run_description: str) -> None:
-        """ Logs the current training results to MLflow.
-
-        Arguments:
-            run_description (str): The description of the current run
-        """
-        # Set the tracking server URI to point to the local server
-        mlflow.set_tracking_uri(uri='http://127.0.0.1:8080')
-
-        # Create a new MLflow experiment
-        experiment_name = f"{self.__class__.__name__} {self.dataset_type.name}"
-        mlflow.set_experiment(experiment_name)
-
-        # Start a MLflow run
-        if self.results_subdirectory is None:
-            run_name = None
-        else:
-            run_name = ' '.join(str(s) for s in self.results_subdirectory.split(' ')[2:])
-
-        with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True):
-            # Log the hyperparameters
-            mlflow.log_params(self.hyperparams)
-
-            # Log the metrics
-            for epoch in range(1, len(self.training_history['loss']) + 1):
-                mlflow.log_metric('train_loss', self.training_history['loss'][epoch], step=epoch)
-                mlflow.log_metric('train_accuracy', self.training_history['accuracy'][epoch], step=epoch)
-                mlflow.log_metric('train_precision', self.training_history['precision'][epoch], step=epoch)
-                mlflow.log_metric('train_recall', self.training_history['recall'][epoch], step=epoch)
-                mlflow.log_metric('train_f1-score', self.training_history['f1-score'][epoch], step=epoch)
-                mlflow.log_metric('val_loss', self.training_history['val_loss'][epoch], step=epoch)
-                mlflow.log_metric('val_accuracy', self.training_history['val_accuracy'][epoch], step=epoch)
-                mlflow.log_metric('val_precision', self.training_history['val_precision'][epoch], step=epoch)
-                mlflow.log_metric('val_recall', self.training_history['val_recall'][epoch], step=epoch)
-                mlflow.log_metric('val_f1-score', self.training_history['val_f1-score'][epoch], step=epoch)
-
-            mlflow.log_metrics(self.evaluation_results)
-
     def export_model(self) -> None:
         """ Exports the model currently in memory in ONNX format. """
         classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
@@ -283,4 +243,5 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
         current_run_dir_path = config.CLASSIFIER_RESULTS_PATH / current_run_dir_name
         current_run_dir_path.mkdir()
+
         self.results_subdirectory = current_run_dir_name
