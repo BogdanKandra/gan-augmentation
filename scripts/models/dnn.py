@@ -24,7 +24,7 @@ class DNN(nn.Module):
                 self.in_features = prod(config.CIFAR_10_SHAPE)
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:
-                raise ValueError('Unimplemented dataset type')
+                raise ValueError('Unsupported dataset type')
 
         self.classifier = nn.Sequential(
             nn.Flatten(),

@@ -2,10 +2,12 @@ import itertools
 import logging
 import sys
 from math import sqrt
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
+import torch
+import torch.nn as nn
 
 from scripts import config
 
@@ -25,6 +27,65 @@ def is_perfect_square(number: int) -> bool:
         raise TypeError('Unexpected type for parameter "number" (Expected <int>, given <{}>)'.format(type(number)))
 
     return int(sqrt(number)) ** 2 == number
+
+
+def get_maximum_batch_size(
+    model: nn.Module,
+    device: torch.device,
+    input_shape: Tuple[int, int, int],
+    output_shape: Tuple[int],
+    dataset_size: int,
+    max_batch_size: int = None,
+    num_iterations: int = 5,
+) -> int:
+    """ Searches for the maximum batch size that can be used for the given model on the given device.
+
+    Arguments:
+        model (nn.Module): the model to be trained
+        device (torch.device): the device on which the model will be trained
+        input_shape (Tuple[int, int, int]): the shape of the input data
+        output_shape (Tuple[int]): the shape of the output data
+        dataset_size (int): the size of the dataset
+        max_batch_size (int, optional): the maximum batch size to be used
+        num_iterations (int, optional): the number of training iterations to be performed
+    """
+    if device is torch.device('cpu'):
+        raise ValueError('Batch size cannot be determined on CPU')
+
+    model.to(device)
+    model.train()
+    optimizer = torch.optim.Adam(model.parameters())
+    loss = nn.CrossEntropyLoss()
+    batch_size = 2
+
+    while True:
+        if max_batch_size is not None and batch_size >= max_batch_size:
+            batch_size = max_batch_size
+            break
+
+        if batch_size >= dataset_size:
+            batch_size //= 2
+            break
+
+        try:
+            for _ in range(num_iterations):
+                inputs = torch.rand(*(batch_size, *input_shape), device=device)
+                targets = torch.rand(*(batch_size, *output_shape), device=device)
+                outputs = model(inputs)
+                batch_loss = loss(targets, outputs)
+                batch_loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+
+            batch_size *= 2
+        except RuntimeError:
+            batch_size //= 2
+            break
+
+    del model, optimizer
+    torch.cuda.empty_cache()
+
+    return batch_size
 
 
 def plot_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
