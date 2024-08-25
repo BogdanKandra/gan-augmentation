@@ -147,6 +147,9 @@ The tests directory contains unit tests for the scripts.
 - https://keras.io/examples/vision/image_classification_efficientnet_fine_tuning/#transfer-learning-from-pretrained-weights
 - https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
 
+## TorchEval
+- https://pytorch.org/torcheval/main/metric_example.html
+
 ## ONNX export
 - https://pytorch.org/tutorials/beginner/onnx/export_simple_model_to_onnx_tutorial.html
 - https://learn.microsoft.com/en-us/windows/ai/windows-ml/tutorials/pytorch-convert-model
