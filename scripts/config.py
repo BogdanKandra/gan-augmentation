@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 
 
-### Enums
+# Enums
 class ClassifierDataset(Enum):
     FASHION_MNIST = 1
     FASHION_MNIST_GAN = 2
@@ -39,7 +39,7 @@ class GeneratorType(Enum):
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
 
 
-### Paths
+# Paths
 PROJECT_PATH = Path.cwd()
 while PROJECT_PATH.stem != 'gan-augmentation':
     PROJECT_PATH = PROJECT_PATH.parent
@@ -51,7 +51,7 @@ CLASSIFIER_RESULTS_PATH = RESULTS_PATH / 'classifiers'
 GENERATOR_RESULTS_PATH = RESULTS_PATH / 'generators'
 
 
-### Datasets labels and sizes
+# Datasets labels and sizes
 FASHION_MNIST_CLASS_LABELS = ['T-Shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
                               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle Boot']
 CIFAR_10_CLASS_LABELS = ['Airplane', 'Automobile', 'Bird', 'Cat', 'Deer',
@@ -60,7 +60,7 @@ FASHION_MNIST_SHAPE = (1, 28, 28)
 CIFAR_10_SHAPE = (3, 32, 32)
 
 
-### Training hyperparameters
+# Training hyperparameters
 TRAIN_SET_PERCENTAGE = 0.85
 VALID_SET_PERCENTAGE = 0.15
 RANDOM_STATE = 29
@@ -69,7 +69,7 @@ SHALLOW_CLF_HYPERPARAMS = {
     'BATCH_SIZE': 16,
     'EARLY_STOPPING_TOLERANCE': 5,
     'LEARNING_RATE': 0.01,
-    'NUM_EPOCHS': 30
+    'NUM_EPOCHS': 20
 }
 
 DEEP_CLF_HYPERPARAMS = {
@@ -87,7 +87,7 @@ CONVOLUTIONAL_CLF_HYPERPARAMS = {
 }
 
 EFFICIENTNET_CLF_HYPERPARAMS = {
-    'BATCH_SIZE': 32,
+    'BATCH_SIZE': 16,
     'EARLY_STOPPING_TOLERANCE': 10,
     'LEARNING_RATE': 0.001,
     'NUM_EPOCHS': 50
