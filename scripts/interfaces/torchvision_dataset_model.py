@@ -30,8 +30,12 @@ class TorchVisionDatasetModel(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def train_model(self) -> None:
-        """ Defines the training parameters and runs the training loop for the model currently in memory. """
+    def train_model(self, run_description: str) -> None:
+        """ Defines the training parameters and runs the training loop for the model currently in memory.
+
+        Arguments:
+            run_description (str): The description of the current run
+        """
         raise NotImplementedError
 
     @abstractmethod
