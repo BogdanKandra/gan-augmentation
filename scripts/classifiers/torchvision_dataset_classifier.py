@@ -100,7 +100,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
     def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
-        min(100, batch size).
+        min(100, train_set_size).
 
         Arguments:
             num_samples (int, optional): the number of images to be displayed
