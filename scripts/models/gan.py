@@ -21,7 +21,7 @@ class Generator(nn.Module):
         """
         super().__init__()
 
-        # Compute the <TBA> based on the specified dataset
+        # Set hyperparameters and compute the output features based on the specified dataset
         match dataset:
             case GeneratorDataset.FASHION_MNIST:
                 self.z_dim = 10
@@ -74,7 +74,7 @@ class Discriminator(nn.Module):
         """
         super().__init__()
 
-        # Compute the <TBA> based on the specified dataset
+        # Set hyperparameters and compute the output features based on the specified dataset
         match dataset:
             case GeneratorDataset.FASHION_MNIST:
                 self.in_features = prod(config.FASHION_MNIST_SHAPE)
