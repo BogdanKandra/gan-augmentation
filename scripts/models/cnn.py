@@ -10,7 +10,8 @@ class CNN(nn.Module):
         dropout and L2 regularization), followed by a decoder block (composed of 2 linear layers with dropout).
 
         Arguments:
-            dataset (str): the name of the dataset to be used """
+            dataset (str): the name of the dataset to be used
+        """
         super().__init__()
 
         # Compute the input and output feature sizes based on the specified dataset

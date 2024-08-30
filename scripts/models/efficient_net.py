@@ -11,7 +11,8 @@ class EfficientNet(nn.Module):
         extractor, with a new classifier head consisting of Dropout and the Output layer.
 
         Arguments:
-            dataset (str): the name of the dataset to be used """
+            dataset (str): the name of the dataset to be used
+        """
         super().__init__()
 
         # Compute the input and output feature sizes based on the specified dataset
