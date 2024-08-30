@@ -45,8 +45,7 @@ class SNNClassifier(TorchVisionDatasetClassifier):
         Arguments:
             compute_batch_size (bool, optional): whether to compute the maximum batch size for this model and device
         """
-        self.model = SNN(self.dataset_type)
-        self.model.to(self.device)
+        self.model = SNN(self.dataset_type).to(self.device)
         self.hyperparams = copy(config.SHALLOW_CLF_HYPERPARAMS)
 
         if compute_batch_size and self.device is torch.device('cuda'):
