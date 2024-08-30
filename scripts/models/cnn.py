@@ -2,25 +2,26 @@ import torch.nn as nn
 from torch import Tensor
 
 from scripts import config
+from scripts.config import ClassifierDataset
 
 
 class CNN(nn.Module):
-    def __init__(self, dataset: str) -> None:
+    def __init__(self, dataset: ClassifierDataset) -> None:
         """ Class representing a convolutional neural network, consisting of 3 convolutional blocks (with pooling,
         dropout and L2 regularization), followed by a decoder block (composed of 2 linear layers with dropout).
 
         Arguments:
-            dataset (str): the name of the dataset to be used
+            dataset (ClassifierDataset): the name of the dataset to be used
         """
         super().__init__()
 
         # Compute the input and output feature sizes based on the specified dataset
         match dataset:
-            case config.ClassifierDataset.FASHION_MNIST:
+            case ClassifierDataset.FASHION_MNIST:
                 self.in_channels = config.FASHION_MNIST_SHAPE[0]
                 self.decoder_features = 256 * (config.FASHION_MNIST_SHAPE[1] // 8) ** 2
                 self.out_features = len(config.FASHION_MNIST_CLASS_LABELS)
-            case config.ClassifierDataset.CIFAR_10:
+            case ClassifierDataset.CIFAR_10:
                 self.in_channels = config.CIFAR_10_SHAPE[0]
                 self.decoder_features = 256 * (config.CIFAR_10_SHAPE[1] // 8) ** 2
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)

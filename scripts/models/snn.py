@@ -4,24 +4,25 @@ import torch.nn as nn
 from torch import Tensor
 
 from scripts import config
+from scripts.config import ClassifierDataset
 
 
 class SNN(nn.Module):
-    def __init__(self, dataset: str) -> None:
+    def __init__(self, dataset: ClassifierDataset) -> None:
         """ Class representing a shallow neural network, consisting of
         the Input and Output layers, and a single hidden layer.
 
         Arguments:
-            dataset (str): the name of the dataset to be used
+            dataset (ClassifierDataset): the name of the dataset to be used
         """
         super().__init__()
 
         # Compute the input and output feature sizes based on the specified dataset
         match dataset:
-            case config.ClassifierDataset.FASHION_MNIST:
+            case ClassifierDataset.FASHION_MNIST:
                 self.in_features = prod(config.FASHION_MNIST_SHAPE)
                 self.out_features = len(config.FASHION_MNIST_CLASS_LABELS)
-            case config.ClassifierDataset.CIFAR_10:
+            case ClassifierDataset.CIFAR_10:
                 self.in_features = prod(config.CIFAR_10_SHAPE)
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:

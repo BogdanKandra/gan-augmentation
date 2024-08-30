@@ -4,10 +4,11 @@ import torch.nn as nn
 from torch import Tensor
 
 from scripts import config
+from scripts.config import GeneratorDataset
 
 
 class Generator(nn.Module):
-    def __init__(self, dataset: str) -> None:
+    def __init__(self, dataset: GeneratorDataset) -> None:
         """ Class representing the generator part from the vanilla GAN. It consists of 4 blocks, each containing a
         Linear layer, BatchNorm layer, and ReLU activation. The output layer is a Linear layer with sigmoid activation.
 
@@ -16,17 +17,17 @@ class Generator(nn.Module):
             h_dim (int): the number of hidden features in the first generator block
 
         Arguments:
-            dataset (str): the name of the dataset to be used
+            dataset (GeneratorDataset): the name of the dataset to be used
         """
         super().__init__()
 
         # Compute the <TBA> based on the specified dataset
         match dataset:
-            case config.ClassifierDataset.FASHION_MNIST:
+            case GeneratorDataset.FASHION_MNIST:
                 self.z_dim = 10
                 self.h_dim = 128
                 self.out_features = prod(config.FASHION_MNIST_SHAPE)
-            case config.ClassifierDataset.CIFAR_10:
+            case GeneratorDataset.CIFAR_10:
                 self.z_dim = 40
                 self.h_dim = 512
                 self.out_features = prod(config.CIFAR_10_SHAPE)
@@ -61,7 +62,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, dataset: str) -> None:
+    def __init__(self, dataset: GeneratorDataset) -> None:
         """ Class representing the discriminator part from the vanilla GAN. It consists of 3 (or 4) blocks, each
         containing a Linear layer and a LeakyReLU activation. The output layer is a Linear layer.
 
@@ -69,13 +70,13 @@ class Discriminator(nn.Module):
             h_dim (int): the number of hidden features in the first discriminator block
 
         Arguments:
-            dataset (str): the name of the dataset to be used
+            dataset (GeneratorDataset): the name of the dataset to be used
         """
         super().__init__()
 
         # Compute the <TBA> based on the specified dataset
         match dataset:
-            case config.GeneratorDataset.FASHION_MNIST:
+            case GeneratorDataset.FASHION_MNIST:
                 self.in_features = prod(config.FASHION_MNIST_SHAPE)
                 self.h_dim = 512
                 self.discriminator_blocks = [
@@ -84,7 +85,7 @@ class Discriminator(nn.Module):
                      (self.h_dim, self.h_dim // 2),
                      (self.h_dim // 2, self.h_dim // 4)]
                 ]
-            case config.GeneratorDataset.CIFAR_10:
+            case GeneratorDataset.CIFAR_10:
                 self.in_features = prod(config.CIFAR_10_SHAPE)
                 self.h_dim = 2048
                 self.discriminator_blocks = [
