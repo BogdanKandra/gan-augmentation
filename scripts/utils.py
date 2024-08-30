@@ -68,17 +68,22 @@ def get_maximum_batch_size(
             break
 
         try:
+            print(f'>>> Trying batch size {batch_size}...')
+
             for _ in range(num_iterations):
                 inputs = torch.rand(*(batch_size, *input_shape), device=device)
                 targets = torch.rand(*(batch_size, *output_shape), device=device)
                 outputs = model(inputs)
-                batch_loss = loss(targets, outputs)
+                print(f'{outputs.shape}')
+                print(f'{targets.shape}')
+                batch_loss = loss(outputs, targets)
                 batch_loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
 
             batch_size *= 2
         except RuntimeError:
+            print(f'>>> Batch size {batch_size} failed. Optimal batch size is {batch_size // 2}.')
             batch_size //= 2
             break
 
