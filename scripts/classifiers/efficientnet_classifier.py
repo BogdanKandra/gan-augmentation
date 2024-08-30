@@ -3,7 +3,7 @@ from typing import Dict, List
 
 import mlflow
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from torcheval.metrics import MulticlassAccuracy, MulticlassPrecision, MulticlassRecall, MulticlassF1Score
