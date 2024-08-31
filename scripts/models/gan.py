@@ -79,6 +79,7 @@ class Discriminator(nn.Module):
             case GeneratorDataset.FASHION_MNIST:
                 self.in_features = prod(config.FASHION_MNIST_SHAPE)
                 self.h_dim = 512
+                self.final_hidden_features = self.h_dim // 4
                 self.discriminator_blocks = [
                     self._discriminator_block(in_features, out_features) for (in_features, out_features) in
                     [(self.in_features, self.h_dim),
@@ -88,6 +89,7 @@ class Discriminator(nn.Module):
             case GeneratorDataset.CIFAR_10:
                 self.in_features = prod(config.CIFAR_10_SHAPE)
                 self.h_dim = 2048
+                self.final_hidden_features = self.h_dim // 8
                 self.discriminator_blocks = [
                     self._discriminator_block(in_features, out_features) for (in_features, out_features) in
                     [(self.in_features, self.h_dim),
@@ -99,14 +101,15 @@ class Discriminator(nn.Module):
                 raise ValueError('Unsupported dataset type')
 
         self.discriminator = nn.Sequential(
+            nn.Flatten(),
             *self.discriminator_blocks,
-            nn.Linear(self.h_dim, 1)
+            nn.Linear(self.final_hidden_features, 1)
         )
 
     def forward(self, x: Tensor) -> Tensor:
         """ Performs the forward pass through the discriminator network. The tensors flow for each dataset as follows:
-        Fashion-MNIST: (1*28*28) -> (512) -> (256) -> (128) -> (1)
-        CIFAR-10: (3*32*32) -> (2048) -> (1024) -> (512) -> (256) -> (1)
+        Fashion-MNIST: (1, 28, 28) -> (1*28*28) -> (512) -> (256) -> (128) -> (1)
+        CIFAR-10: (3, 32, 32) -> (3*32*32) -> (2048) -> (1024) -> (512) -> (256) -> (1)
         """
         x = self.discriminator(x)
 
