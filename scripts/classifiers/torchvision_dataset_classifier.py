@@ -98,13 +98,12 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
                     f'y_test.dtype={self.y_test.dtype}\n\tdevice: X_test.device={self.X_test.device}, '
                     f'y_test.device={self.y_test.device}')
 
-    def display_dataset_sample(self, num_samples: int = 9, cmap=plt.get_cmap('gray')) -> None:
+    def display_dataset_sample(self, num_samples: int = 9) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
         min(100, train_set_size).
 
         Arguments:
             num_samples (int, optional): the number of images to be displayed
-            cmap (Colormap, optional): the colormap to be used for displaying the images
         """
         # Parameter validation
         max_samples = min(self.X_train.shape[0], 100)
@@ -119,6 +118,12 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             while not utils.is_perfect_square(next_perfect_square):
                 next_perfect_square += 1
             grid_size = int(sqrt(next_perfect_square))
+
+        # Compute the cmap used for displaying the images
+        if self.X_train.shape[1] == 1:
+            cmap = plt.get_cmap('gray')
+        else:
+            cmap = plt.get_cmap(None)
 
         # Plot random samples
         indices = [randrange(0, self.X_train.shape[0]) for _ in range(num_samples)]
