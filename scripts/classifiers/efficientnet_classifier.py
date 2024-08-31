@@ -82,7 +82,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         self.model = EfficientNet(self.dataset_type).to(self.device)
         self.hyperparams = copy(config.EFFICIENTNET_CLF_HYPERPARAMS)
 
-        if compute_batch_size and self.device is torch.device('cuda'):
+        if compute_batch_size and self.device.type == 'cuda':
             LOGGER.info('>>> Searching for the optimal batch size for this GPU...')
             dataset_size = sum(map(len, [self.X_train, self.X_valid, self.X_test]))
             self.hyperparams['BATCH_SIZE'] = utils.get_maximum_batch_size(self.model, self.device,
