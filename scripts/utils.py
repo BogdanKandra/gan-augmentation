@@ -21,6 +21,9 @@ def get_logger(name: str) -> logging.Logger:
     return logger
 
 
+LOGGER = get_logger(__name__)
+
+
 def is_perfect_square(number: int) -> bool:
     """ Checks whether the given number is a perfect square """
     if type(number) is not int:
@@ -29,7 +32,7 @@ def is_perfect_square(number: int) -> bool:
     return int(sqrt(number)) ** 2 == number
 
 
-def get_maximum_batch_size(
+def get_maximum_classifier_batch_size(
     model: nn.Module,
     device: torch.device,
     input_shape: Tuple[int, int, int],
@@ -38,7 +41,7 @@ def get_maximum_batch_size(
     max_batch_size: int = None,
     num_iterations: int = 5,
 ) -> int:
-    """ Searches for the maximum batch size that can be used for the given model on the given device.
+    """ Searches for the maximum batch size that can be used for the given classifier, on the given device.
 
     Arguments:
         model (nn.Module): the model to be trained
@@ -49,9 +52,6 @@ def get_maximum_batch_size(
         max_batch_size (int, optional): the maximum batch size to be used
         num_iterations (int, optional): the number of training iterations to be performed
     """
-    if device is torch.device('cpu'):
-        raise ValueError('Batch size cannot be determined on CPU')
-
     model.to(device)
     model.train()
     optimizer = torch.optim.Adam(model.parameters())
@@ -60,22 +60,22 @@ def get_maximum_batch_size(
 
     while True:
         if max_batch_size is not None and batch_size >= max_batch_size:
+            LOGGER.info(f'>>> Batch size reached maximum specified value: {batch_size}!')
             batch_size = max_batch_size
             break
 
         if batch_size >= dataset_size:
+            LOGGER.info(f'>>> Batch size exceeded dataset size: {batch_size}!')
             batch_size //= 2
             break
 
         try:
-            print(f'>>> Trying batch size {batch_size}...')
+            LOGGER.info(f'> Trying batch size {batch_size}...')
 
             for _ in range(num_iterations):
-                inputs = torch.rand(*(batch_size, *input_shape), device=device)
-                targets = torch.rand(*(batch_size, *output_shape), device=device)
+                inputs = torch.randn((batch_size, *input_shape), dtype=torch.float32, device=device)
+                targets = torch.randint(low=0, high=10, size=(batch_size, *output_shape), device=device)
                 outputs = model(inputs)
-                print(f'{outputs.shape}')
-                print(f'{targets.shape}')
                 batch_loss = loss(outputs, targets)
                 batch_loss.backward()
                 optimizer.step()
@@ -83,11 +83,82 @@ def get_maximum_batch_size(
 
             batch_size *= 2
         except RuntimeError:
-            print(f'>>> Batch size {batch_size} failed. Optimal batch size is {batch_size // 2}.')
+            LOGGER.info(f'>>> Batch size {batch_size} led to OOM error!')
             batch_size //= 2
             break
 
+    LOGGER.info(f'>>> Optimal batch size is set to {batch_size}.')
     del model, optimizer
+    torch.cuda.empty_cache()
+
+    return batch_size
+
+
+def get_maximum_generator_batch_size(
+    generator: nn.Module,
+    discriminator: nn.Module,
+    device: torch.device,
+    input_shape: Tuple[int, int, int],
+    output_shape: Tuple[int],
+    dataset_size: int,
+    max_batch_size: int = None,
+    num_iterations: int = 5,
+) -> int:
+    """ Searches for the maximum batch size that can be used for the given generator, on the given device.
+
+    Arguments:
+        generator (nn.Module): the generator model to be trained
+        discriminator (nn.Module): the discriminator model to be trained
+        device (torch.device): the device on which the model will be trained
+        input_shape (Tuple[int, int, int]): the shape of the input data
+        output_shape (Tuple[int]): the shape of the output data
+        dataset_size (int): the size of the dataset
+        max_batch_size (int, optional): the maximum batch size to be used
+        num_iterations (int, optional): the number of training iterations to be performed
+    """
+    generator.to(device)
+    generator.train()
+    gen_optimizer = torch.optim.Adam(generator.parameters())
+
+    discriminator.to(device)
+    discriminator.train()
+    disc_optimizer = torch.optim.Adam(discriminator.parameters())
+
+    loss = nn.CrossEntropyLoss()
+    batch_size = 2
+
+    while True:
+        if max_batch_size is not None and batch_size >= max_batch_size:
+            LOGGER.info(f'>>> Batch size reached maximum specified value: {batch_size}!')
+            batch_size = max_batch_size
+            break
+
+        if batch_size >= dataset_size:
+            LOGGER.info(f'>>> Batch size exceeded dataset size: {batch_size}!')
+            batch_size //= 2
+            break
+
+        try:
+            LOGGER.info(f'> Trying batch size {batch_size}...')
+            break
+
+            # for _ in range(num_iterations):
+            #     inputs = torch.randn((batch_size, *input_shape), dtype=torch.float32, device=device)
+            #     targets = torch.randint(low=0, high=10, size=(batch_size, *output_shape), device=device)
+            #     outputs = model(inputs)
+            #     batch_loss = loss(outputs, targets)
+            #     batch_loss.backward()
+            #     optimizer.step()
+            #     optimizer.zero_grad()
+
+            # batch_size *= 2
+        except RuntimeError:
+            LOGGER.info(f'>>> Batch size {batch_size} led to OOM error!')
+            batch_size //= 2
+            break
+
+    LOGGER.info(f'>>> Optimal batch size is set to {batch_size}.')
+    del generator, discriminator, gen_optimizer, disc_optimizer
     torch.cuda.empty_cache()
 
     return batch_size
