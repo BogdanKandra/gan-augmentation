@@ -24,11 +24,11 @@ class Generator(nn.Module):
         # Set hyperparameters and compute the output features based on the specified dataset
         match dataset:
             case GeneratorDataset.FASHION_MNIST:
-                self.z_dim = 10
+                self.z_dim = 64
                 self.h_dim = 128
                 self.out_features = prod(config.FASHION_MNIST_SHAPE)
             case GeneratorDataset.CIFAR_10:
-                self.z_dim = 40
+                self.z_dim = 128
                 self.h_dim = 512
                 self.out_features = prod(config.CIFAR_10_SHAPE)
             case _:
