@@ -52,13 +52,14 @@ class SNNClassifier(TorchVisionDatasetClassifier):
             if self.device.type == 'cuda':
                 LOGGER.info('>>> Searching for the optimal batch size for this model and GPU...')
                 temp_model = SNN(self.dataset_type).to(self.device)
-                dataset_size = sum(map(len, [self.X_train, self.X_valid, self.X_test]))
+                minimum_dataset_size = min(map(len, [self.X_train, self.X_valid, self.X_test]))
                 optimal_batch_size = utils.get_maximum_classifier_batch_size(temp_model, self.device,
                                                                              input_shape=self.X_train.shape[1:],
                                                                              output_shape=self.y_train.shape[1:],
-                                                                             dataset_size=dataset_size,
+                                                                             dataset_size=minimum_dataset_size,
                                                                              max_batch_size=512)
                 self.hyperparams['BATCH_SIZE'] = optimal_batch_size
+                del temp_model
             else:
                 LOGGER.info('>>> GPU not available, skipping batch size computation...')
 
