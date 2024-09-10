@@ -88,7 +88,6 @@ def get_maximum_classifier_batch_size(
             break
 
     LOGGER.info(f'>>> Optimal batch size is set to {batch_size}.')
-    del model, optimizer
     torch.cuda.empty_cache()
 
     return batch_size
@@ -98,8 +97,8 @@ def get_maximum_generator_batch_size(
     generator: nn.Module,
     discriminator: nn.Module,
     device: torch.device,
-    input_shape: Tuple[int, int, int],
-    output_shape: Tuple[int],
+    gen_input_shape: int,
+    disc_input_shape: Tuple[int, int, int],
     dataset_size: int,
     max_batch_size: int = None,
     num_iterations: int = 5,
@@ -110,8 +109,8 @@ def get_maximum_generator_batch_size(
         generator (nn.Module): the generator model to be trained
         discriminator (nn.Module): the discriminator model to be trained
         device (torch.device): the device on which the model will be trained
-        input_shape (Tuple[int, int, int]): the shape of the input data
-        output_shape (Tuple[int]): the shape of the output data
+        gen_input_shape (int): the shape of the generator input
+        disc_input_shape (Tuple[int, int, int]): the shape of the discriminator input
         dataset_size (int): the size of the dataset
         max_batch_size (int, optional): the maximum batch size to be used
         num_iterations (int, optional): the number of training iterations to be performed
@@ -124,7 +123,7 @@ def get_maximum_generator_batch_size(
     discriminator.train()
     disc_optimizer = torch.optim.Adam(discriminator.parameters())
 
-    loss = nn.CrossEntropyLoss()
+    loss = nn.BCEWithLogitsLoss()
     batch_size = 2
 
     while True:
@@ -140,32 +139,48 @@ def get_maximum_generator_batch_size(
 
         try:
             LOGGER.info(f'> Trying batch size {batch_size}...')
-            break
 
-            # for _ in range(num_iterations):
-            #     inputs = torch.randn((batch_size, *input_shape), dtype=torch.float32, device=device)
-            #     targets = torch.randint(low=0, high=10, size=(batch_size, *output_shape), device=device)
-            #     outputs = model(inputs)
-            #     batch_loss = loss(outputs, targets)
-            #     batch_loss.backward()
-            #     optimizer.step()
-            #     optimizer.zero_grad()
+            for _ in range(num_iterations):
+                # Train the discriminator
+                noise = torch.randn((batch_size, gen_input_shape), device=device)
+                fake = generator(noise)
+                predictions = discriminator(fake.detach())
+                loss_fakes = loss(predictions, torch.zeros_like(predictions))
 
-            # batch_size *= 2
+                real = torch.randn((batch_size, *disc_input_shape), device=device)
+                predictions = discriminator(real)
+                loss_reals = loss(predictions, torch.ones_like(predictions))
+
+                disc_loss = (loss_fakes + loss_reals) / 2
+                disc_loss.backward()
+                disc_optimizer.step()
+
+                # Train the generator
+                noise = torch.randn((batch_size, gen_input_shape), device=device)
+                fake = generator(noise)
+                predictions = discriminator(fake)
+
+                gen_loss = loss(predictions, torch.ones_like(predictions))
+                gen_loss.backward()
+                gen_optimizer.step()
+
+                disc_optimizer.zero_grad()
+                gen_optimizer.zero_grad()
+
+            batch_size *= 2
         except RuntimeError:
             LOGGER.info(f'>>> Batch size {batch_size} led to OOM error!')
             batch_size //= 2
             break
 
     LOGGER.info(f'>>> Optimal batch size is set to {batch_size}.')
-    del generator, discriminator, gen_optimizer, disc_optimizer
     torch.cuda.empty_cache()
 
     return batch_size
 
 
-def plot_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
-    """ Plots the training and validation accuracy and loss """
+def plot_classification_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
+    """ Plots the training and validation accuracy and loss for a classifier model """
     training_accuracy = history['accuracy']
     validation_accuracy = history['val_accuracy']
     training_loss = history['loss']
@@ -190,6 +205,25 @@ def plot_results(subdirectory_name: str, history: Dict[str, List[float]]) -> Non
     plt.title('Training and Validation Loss')
 
     figure_path = config.CLASSIFIER_RESULTS_PATH / subdirectory_name / 'Training Results.png'
+    plt.savefig(figure_path, dpi=300)
+    plt.close()
+
+
+def plot_generation_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
+    """ Plots the discriminator and generator losses """
+    discriminator_loss = history['discriminator_loss']
+    generator_loss = history['generator_loss']
+
+    plt.figure(figsize=(18, 10))
+    plt.plot(discriminator_loss, label='Discriminator Loss')
+    plt.plot(generator_loss, label='Generator Loss')
+    plt.legend()
+    plt.xlabel('Epoch')
+    plt.ylabel('Categorical Cross Entropy')
+    plt.ylim([0, max(plt.ylim())])
+    plt.title('Discriminator and Generator Losses')
+
+    figure_path = config.GENERATOR_RESULTS_PATH / subdirectory_name / 'Training Results.png'
     plt.savefig(figure_path, dpi=300)
     plt.close()
 
