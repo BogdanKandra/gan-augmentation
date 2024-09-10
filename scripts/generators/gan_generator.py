@@ -128,8 +128,8 @@ class GANGenerator(TorchVisionDatasetGenerator):
                     discriminator_loss += batch_disc_loss.item()
                     generator_loss += batch_gen_loss.item()
 
-                self.training_history["discriminator_loss"].append(discriminator_loss / len(self.X))
-                self.training_history["generator_loss"].append(generator_loss / len(self.X))
+                self.training_history["discriminator_loss"].append(discriminator_loss)
+                self.training_history["generator_loss"].append(generator_loss)
 
                 # Log the loss values to MLflow and console
                 mlflow.log_metric("discriminator_loss", self.training_history["discriminator_loss"][-1], step=epoch)
@@ -139,20 +139,20 @@ class GANGenerator(TorchVisionDatasetGenerator):
                 LOGGER.info(f"> discriminator loss: {self.training_history['discriminator_loss'][-1]}")
                 LOGGER.info(f"> generator loss: {self.training_history['generator_loss'][-1]}")
 
-                # Early stopping
-                best_loss = min(self.training_history["generator_loss"])
-                if self.training_history["generator_loss"][-1] <= best_loss:
-                    if early_stopping_counter != 0:
-                        early_stopping_counter = 0
-                        LOGGER.info(">> Early stopping counter reset.")
-                    self.best_model_state = self.model.state_dict()
-                else:
-                    early_stopping_counter += 1
-                    LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
+                # # Early stopping
+                # best_loss = min(self.training_history["generator_loss"])
+                # if self.training_history["generator_loss"][-1] <= best_loss:
+                #     if early_stopping_counter != 0:
+                #         early_stopping_counter = 0
+                #         LOGGER.info(">> Early stopping counter reset.")
+                #     self.best_model_state = self.model.state_dict()
+                # else:
+                #     early_stopping_counter += 1
+                #     LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
 
-                if early_stopping_counter == self.hyperparams['EARLY_STOPPING_TOLERANCE']:
-                    LOGGER.info(">> Training terminated due to early stopping!")
-                    break
+                # if early_stopping_counter == self.hyperparams['EARLY_STOPPING_TOLERANCE']:
+                #     LOGGER.info(">> Training terminated due to early stopping!")
+                #     break
 
             self.run_id = run.info.run_id
 
