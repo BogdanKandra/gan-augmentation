@@ -194,7 +194,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             f.write(f'Number of Epochs: {self.hyperparams["NUM_EPOCHS"]}\n')
 
         # Plot the train and validation accuracy and loss
-        utils.plot_results(self.results_subdirectory, self.training_history)
+        utils.plot_classification_results(self.results_subdirectory, self.training_history)
 
         # Save the train and validation sets results
         results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Results.txt'
