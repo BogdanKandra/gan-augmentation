@@ -142,7 +142,9 @@ class GANGenerator(TorchVisionDatasetGenerator):
                 # Plot a batch of real and fake images
                 noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
                 fake = self.model(noise)
+                LOGGER.info("> Real images:")
                 self._display_image_batch(batch)
+                LOGGER.info("> Fake images:")
                 self._display_image_batch(fake)
 
                 # # Early stopping
