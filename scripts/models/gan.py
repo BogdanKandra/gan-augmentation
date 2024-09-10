@@ -27,10 +27,12 @@ class Generator(nn.Module):
                 self.z_dim = 64
                 self.h_dim = 128
                 self.out_features = prod(config.FASHION_MNIST_SHAPE)
+                self.out_shape = config.FASHION_MNIST_SHAPE
             case GeneratorDataset.CIFAR_10:
                 self.z_dim = 128
                 self.h_dim = 512
                 self.out_features = prod(config.CIFAR_10_SHAPE)
+                self.out_shape = config.CIFAR_10_SHAPE
             case _:
                 raise ValueError('Unsupported dataset type')
 
@@ -41,12 +43,13 @@ class Generator(nn.Module):
             self._generator_block(self.h_dim * 4, self.h_dim * 8),
             nn.Linear(self.h_dim * 8, self.out_features),
             nn.Sigmoid(),
+            nn.Unflatten(1, self.out_shape)
         )
 
     def forward(self, z: Tensor) -> Tensor:
         """ Performs the forward pass through the generator network. The tensors flow for each dataset as follows:
-        Fashion-MNIST: (10) -> (128) -> (256) -> (512) -> (1024) -> (1*28*28)
-        CIFAR-10: (40) -> (512) -> (1024) -> (2048) -> (4096) -> (3*32*32)
+        Fashion-MNIST: (10) -> (128) -> (256) -> (512) -> (1024) -> (1*28*28) -> (1, 28, 28)
+        CIFAR-10: (40) -> (512) -> (1024) -> (2048) -> (4096) -> (3*32*32) -> (3, 32, 32)
         """
         x = self.generator(z)
 
