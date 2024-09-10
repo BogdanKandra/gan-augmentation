@@ -164,7 +164,7 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
             for line in str(self.model).split('\n'):
                 f.write(f'{line}\n')
 
-            f.write('DISCRIMINATOR MODEL ARCHITECTURE:\n')
+            f.write('\nDISCRIMINATOR MODEL ARCHITECTURE:\n')
             f.write('------------------------------\n')
             for line in str(self.discriminator).split('\n'):
                 f.write(f'{line}\n')
