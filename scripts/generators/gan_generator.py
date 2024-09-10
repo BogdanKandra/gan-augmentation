@@ -82,7 +82,7 @@ class GANGenerator(TorchVisionDatasetGenerator):
             "discriminator_loss": [],
             "generator_loss": []
         }
-        early_stopping_counter = 0
+        # early_stopping_counter = 0
 
         # Setup and start an MLflow run
         mlflow.set_tracking_uri(uri='http://127.0.0.1:8080')
@@ -139,6 +139,12 @@ class GANGenerator(TorchVisionDatasetGenerator):
                 LOGGER.info(f"> discriminator loss: {self.training_history['discriminator_loss'][-1]}")
                 LOGGER.info(f"> generator loss: {self.training_history['generator_loss'][-1]}")
 
+                # Plot a batch of real and fake images
+                noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
+                fake = self.model(noise)
+                self._display_image_batch(batch)
+                self._display_image_batch(fake)
+
                 # # Early stopping
                 # best_loss = min(self.training_history["generator_loss"])
                 # if self.training_history["generator_loss"][-1] <= best_loss:
@@ -159,7 +165,8 @@ class GANGenerator(TorchVisionDatasetGenerator):
         LOGGER.info(self.training_history)
 
     def evaluate_model(self) -> None:
-        """ Evaluates the model currently in memory by computing the Frechet Inception Distance of the generator. """
+        """ Evaluates the model currently in memory by computing the Frechet Inception Distance of the generator
+        on a small dataset subset of 10000 samples. """
         # Define the FID evaluation metric
         fid = FrechetInceptionDistance(device=self.device)
 
@@ -174,7 +181,7 @@ class GANGenerator(TorchVisionDatasetGenerator):
 
         with mlflow.start_run(run_id=self.run_id, log_system_metrics=True):
             # Define the DataLoader
-            dataset = TensorDataset(self.X, self.y)
+            dataset = TensorDataset(self.X[:10000], self.y[:10000])
             dataloader = DataLoader(dataset=dataset,
                                     batch_size=self.hyperparams['BATCH_SIZE'],
                                     pin_memory=self.pin_memory,
