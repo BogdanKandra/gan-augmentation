@@ -234,7 +234,7 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
 
         self.results_subdirectory = current_run_dir_name
 
-    def _display_image_batch(self, images: torch.Tensor, num_samples: int) -> None:
+    def _display_image_batch(self, images: torch.Tensor, num_samples: int = 25) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
         min(100, dataset_size).
 
