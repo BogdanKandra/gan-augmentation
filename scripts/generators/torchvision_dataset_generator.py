@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from torchinfo import summary
 from torchvision.datasets import CIFAR10, FashionMNIST
+from torchvision.utils import make_grid
 
 from scripts import config, utils
 from scripts.config import GeneratorDataset
@@ -232,3 +233,17 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
         current_run_dir_path.mkdir()
 
         self.results_subdirectory = current_run_dir_name
+
+    def _display_image_batch(self, images: torch.Tensor, num_samples: int) -> None:
+        """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
+        min(100, dataset_size).
+
+        Arguments:
+            num_samples (int, optional): the number of images to be displayed
+        """
+        if num_samples > images.shape[0]:
+            num_samples = images.shape[0]
+        images = images.detach().cpu()
+        image_grid = make_grid(images[:num_samples], nrow=5)
+        plt.imshow(image_grid.permute(1, 2, 0).squeeze())
+        plt.show()
