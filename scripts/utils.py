@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from scripts import config
 
@@ -143,12 +144,14 @@ def get_maximum_generator_batch_size(
             for _ in range(num_iterations):
                 # Train the discriminator
                 noise = torch.randn((batch_size, gen_input_shape), device=device)
-                fake = generator(noise)
-                predictions = discriminator(fake.detach())
+                labels = torch.randint(low=0, high=10, size=(batch_size,), device=device)
+                labels_one_hot = F.one_hot(labels, num_classes=10)
+                fake = generator(noise, labels_one_hot)
+                predictions = discriminator(fake.detach(), labels_one_hot)
                 loss_fakes = loss(predictions, torch.zeros_like(predictions))
 
                 real = torch.randn((batch_size, *disc_input_shape), device=device)
-                predictions = discriminator(real)
+                predictions = discriminator(real, labels_one_hot)
                 loss_reals = loss(predictions, torch.ones_like(predictions))
 
                 disc_loss = (loss_fakes + loss_reals) / 2
@@ -157,8 +160,10 @@ def get_maximum_generator_batch_size(
 
                 # Train the generator
                 noise = torch.randn((batch_size, gen_input_shape), device=device)
-                fake = generator(noise)
-                predictions = discriminator(fake)
+                labels = torch.randint(low=0, high=10, size=(batch_size,), device=device)
+                labels_one_hot = F.one_hot(labels, num_classes=10)
+                fake = generator(noise, labels_one_hot)
+                predictions = discriminator(fake, labels_one_hot)
 
                 gen_loss = loss(predictions, torch.ones_like(predictions))
                 gen_loss.backward()

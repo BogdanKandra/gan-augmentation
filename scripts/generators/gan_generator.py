@@ -3,6 +3,7 @@ from typing import Dict, List
 
 import mlflow
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from torcheval.metrics import FrechetInceptionDistance
@@ -30,6 +31,9 @@ class GANGenerator(TorchVisionDatasetGenerator):
 
             # Convert to float and scale to [0, 1]
             self.X = self.X.to(torch.float32) / 255.0
+
+            # One-hot encode the labels
+            self.y = F.one_hot(self.y, num_classes=len(self.class_labels))
 
             self.preprocessed = True
 
@@ -110,19 +114,20 @@ class GANGenerator(TorchVisionDatasetGenerator):
                 discriminator_loss = 0.0
                 generator_loss = 0.0
 
-                for batch, _ in tqdm(dataloader):
+                for batch, labels in tqdm(dataloader):
                     batch = batch.to(self.device)
+                    labels = labels.to(self.device)
 
                     # Update the discriminator
                     self.disc_optimizer.zero_grad()
-                    batch_disc_loss = self._disc_loss(batch)
+                    batch_disc_loss = self._disc_loss(batch, labels)
                     batch_disc_loss.backward(retain_graph=True)
                     self.disc_optimizer.step()
 
                     # Update the generator
                     self.gen_optimizer.zero_grad()
-                    batch_gen_loss = self._gen_loss()
-                    batch_gen_loss.backward(retain_graph=True)
+                    batch_gen_loss = self._gen_loss(labels)
+                    batch_gen_loss.backward()
                     self.gen_optimizer.step()
 
                     discriminator_loss += batch_disc_loss.item()
@@ -140,8 +145,8 @@ class GANGenerator(TorchVisionDatasetGenerator):
                 LOGGER.info(f"> generator loss: {self.training_history['generator_loss'][-1]}")
 
                 # Plot a batch of real and fake images
-                noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
-                fake = self.model(noise)
+                noise = torch.randn((labels.shape[0], self.model.z_dim), device=self.device)
+                fake = self.model(noise, labels)
                 LOGGER.info("> Real images:")
                 self._display_image_batch(batch)
                 LOGGER.info("> Fake images:")
@@ -167,8 +172,8 @@ class GANGenerator(TorchVisionDatasetGenerator):
         LOGGER.info(self.training_history)
 
     def evaluate_model(self) -> None:
-        """ Evaluates the model currently in memory by computing the Frechet Inception Distance of the generator
-        on a small dataset subset of 10000 samples. """
+        """ Evaluates the model currently in memory by computing the Frechet Inception Distance between the generator
+        distribution and real images distribution, on a small dataset subset of 10000 samples. """
         # Define the FID evaluation metric
         fid = FrechetInceptionDistance(device=self.device)
 
@@ -193,10 +198,12 @@ class GANGenerator(TorchVisionDatasetGenerator):
             with torch.no_grad():
                 self.model.eval()
 
-                for batch, _ in tqdm(dataloader):
+                for batch, labels in tqdm(dataloader):
                     real = batch.to(self.device)
+                    labels = labels.to(self.device)
+
                     noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
-                    fake = self.model(noise)
+                    fake = self.model(noise, labels)
 
                     # The Inception-V3 model used for computing FID expects 3-channel images
                     if real.shape[1] == 1:
@@ -211,55 +218,55 @@ class GANGenerator(TorchVisionDatasetGenerator):
 
         LOGGER.info(self.evaluation_results)
 
-    def _gen_loss(self) -> torch.Tensor:
+    def _gen_loss(self, one_hot_labels: torch.Tensor) -> torch.Tensor:
         """ Computes the generator loss for a batch of fake images.
+
+        Arguments:
+            one_hot_labels (torch.Tensor): A batch of one-hot labels
 
         Returns:
             torch.Tensor: A Torch scalar representing the loss value
         """
-        # Generate noise for the generator
-        noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
-
         # Generate a batch of fake images
-        fake = self.model(noise)
+        noise = torch.randn((one_hot_labels.shape[0], self.model.z_dim), device=self.device)
+        fake = self.model(noise, one_hot_labels)
 
         # Compute the discriminator's predictions of the fake images
-        predictions = self.discriminator(fake)
+        predictions = self.discriminator(fake, one_hot_labels)
 
         # Compute the loss for the fake images
-        labels = torch.ones_like(predictions)
-        loss = self.loss(predictions, labels)
+        fake_labels = torch.ones_like(predictions)
+        loss = self.loss(predictions, fake_labels)
 
         return loss
 
-    def _disc_loss(self, real: torch.Tensor) -> torch.Tensor:
+    def _disc_loss(self, real: torch.Tensor, one_hot_labels: torch.Tensor) -> torch.Tensor:
         """ Computes the discriminator loss for a batch of real images and a batch of fake images.
 
         Arguments:
             real (torch.Tensor): A batch of real images
+            one_hot_labels (torch.Tensor): A batch of one-hot labels
 
         Returns:
             torch.Tensor: A Torch scalar representing the loss value
         """
-        # Generate noise for the generator
-        noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
-
         # Generate a batch of fake images
-        fake = self.model(noise)
+        noise = torch.randn((one_hot_labels.shape[0], self.model.z_dim), device=self.device)
+        fake = self.model(noise, one_hot_labels)
 
         # Compute the discriminator's predictions of the fake images
-        predictions = self.discriminator(fake.detach())
+        predictions = self.discriminator(fake, one_hot_labels)
 
         # Compute the loss for the fake images
-        labels = torch.zeros_like(predictions)
-        loss_fakes = self.loss(predictions, labels)
+        true_labels = torch.zeros_like(predictions)
+        loss_fakes = self.loss(predictions, true_labels)
 
-        # Compute the discriminator's predictions of the fake images
-        predictions = self.discriminator(real)
+        # Compute the discriminator's predictions of the real images
+        predictions = self.discriminator(real, one_hot_labels)
 
         # Compute the loss for the real images
-        labels = torch.ones_like(predictions)
-        loss_reals = self.loss(predictions, labels)
+        true_labels = torch.ones_like(predictions)
+        loss_reals = self.loss(predictions, true_labels)
 
         # Combine the losses
         disc_loss = (loss_fakes + loss_reals) / 2

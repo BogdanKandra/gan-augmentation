@@ -6,6 +6,7 @@ from random import randrange
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torchinfo import summary
 from torchvision.datasets import CIFAR10, FashionMNIST
 from torchvision.utils import make_grid
@@ -117,7 +118,7 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
             else:
                 # Image must be on the CPU and channels-last for matplotlib
                 sample = self.X[i].to('cpu').permute(1, 2, 0)
-                label = self.class_labels[self.y[i]]
+                label = self.class_labels[torch.argmax(self.y[i])]
                 ax.imshow(sample, cmap=cmap)
                 ax.set_title(label)
                 ax.axis('off')
@@ -132,10 +133,18 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
             LOGGER.info('>>> Discriminator components:')
             LOGGER.info(f'{self.discriminator}\n\n')
 
+            self.model.eval()
+            self.discriminator.eval()
+
+            dummy_noise = torch.randn((1, self.model.z_dim), device=self.device)
+            dummy_labels = torch.randint(low=0, high=10, size=(1,), device=self.device)
+            dummy_labels = F.one_hot(dummy_labels, num_classes=10)
+            dummy_image = self.model(dummy_noise, dummy_labels)
+
             LOGGER.info('>>> Torchinfo Generator summary:')
             summary(
                 self.model,
-                input_size=(1, self.model.z_dim),
+                input_data=[dummy_noise, dummy_labels],
                 col_names=["input_size", "output_size", "num_params",
                            "params_percent", "kernel_size", "mult_adds", "trainable"],
                 device=self.device,
@@ -145,7 +154,7 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
             LOGGER.info('>>> Torchinfo Discriminator summary:')
             summary(
                 self.discriminator,
-                input_size=(1, *self.dataset_shape),
+                input_data=[dummy_image, dummy_labels],
                 col_names=["input_size", "output_size", "num_params",
                            "params_percent", "kernel_size", "mult_adds", "trainable"],
                 device=self.device,
