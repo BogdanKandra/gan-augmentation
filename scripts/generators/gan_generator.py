@@ -202,7 +202,7 @@ class GANGenerator(TorchVisionDatasetGenerator):
                     real = batch.to(self.device)
                     labels = labels.to(self.device)
 
-                    noise = torch.randn((self.hyperparams['BATCH_SIZE'], self.model.z_dim), device=self.device)
+                    noise = torch.randn((labels.shape[0], self.model.z_dim), device=self.device)
                     fake = self.model(noise, labels)
 
                     # The Inception-V3 model used for computing FID expects 3-channel images
