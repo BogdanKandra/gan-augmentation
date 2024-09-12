@@ -118,13 +118,9 @@ class CNNClassifier(TorchVisionDatasetClassifier):
             valid_dataset = TensorDataset(self.X_valid, self.y_valid)
             train_dataloader = DataLoader(dataset=train_dataset,
                                           batch_size=self.hyperparams['BATCH_SIZE'],
-                                          shuffle=True,
-                                          pin_memory=self.pin_memory,
-                                          pin_memory_device=self.pin_memory_device)
+                                          shuffle=True)
             valid_dataloader = DataLoader(dataset=valid_dataset,
-                                          batch_size=self.hyperparams['BATCH_SIZE'],
-                                          pin_memory=self.pin_memory,
-                                          pin_memory_device=self.pin_memory_device)
+                                          batch_size=self.hyperparams['BATCH_SIZE'])
 
             # Log the hyperparameters to MLflow
             mlflow.log_params(self.hyperparams)
@@ -253,9 +249,7 @@ class CNNClassifier(TorchVisionDatasetClassifier):
             # Define test DataLoader
             test_dataset = TensorDataset(self.X_test, self.y_test)
             test_dataloader = DataLoader(dataset=test_dataset,
-                                         batch_size=self.hyperparams['BATCH_SIZE'],
-                                         pin_memory=self.pin_memory,
-                                         pin_memory_device=self.pin_memory_device)
+                                         batch_size=self.hyperparams['BATCH_SIZE'])
 
             # Gradient computation is not required during evaluation
             with torch.no_grad():
