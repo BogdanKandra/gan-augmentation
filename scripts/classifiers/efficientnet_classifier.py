@@ -45,15 +45,15 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
             # self.X_valid = auto_transforms(self.X_valid)
             # self.X_test = auto_transforms(self.X_test)
 
-            # Resize the images to 224x224
-            self.X_train = F.interpolate(self.X_train, size=(224, 224), mode='bicubic')
-            self.X_valid = F.interpolate(self.X_valid, size=(224, 224), mode='bicubic')
-            self.X_test = F.interpolate(self.X_test, size=(224, 224), mode='bicubic')
-
             # Convert to float and scale to [0, 1]
             self.X_train = self.X_train.to(torch.float32) / 255.0
             self.X_valid = self.X_valid.to(torch.float32) / 255.0
             self.X_test = self.X_test.to(torch.float32) / 255.0
+
+            # Resize the images to 224x224
+            self.X_train = F.interpolate(self.X_train, size=(224, 224), mode='bicubic')
+            self.X_valid = F.interpolate(self.X_valid, size=(224, 224), mode='bicubic')
+            self.X_test = F.interpolate(self.X_test, size=(224, 224), mode='bicubic')
 
             # # Normalize the images with the ImageNet mean and standard deviation
             # mean = torch.tensor([0.485, 0.456, 0.406])
@@ -62,12 +62,12 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
             # std = std[None, :, None, None]
 
             # Normalize the images with the dataset mean and standard deviation
-            mean = torch.mean(self.X_train, dim=(0, 2, 3), keepdim=True)
-            std = torch.std(self.X_train, dim=(0, 2, 3), keepdim=True)
+            # mean = torch.mean(self.X_train, dim=(0, 2, 3), keepdim=True)
+            # std = torch.std(self.X_train, dim=(0, 2, 3), keepdim=True)
 
-            self.X_train = (self.X_train - mean) / std
-            self.X_valid = (self.X_valid - mean) / std
-            self.X_test = (self.X_test - mean) / std
+            # self.X_train = (self.X_train - mean) / std
+            # self.X_valid = (self.X_valid - mean) / std
+            # self.X_test = (self.X_test - mean) / std
 
             self.preprocessed = True
 
@@ -151,13 +151,9 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
             valid_dataset = TensorDataset(self.X_valid, self.y_valid)
             train_dataloader = DataLoader(dataset=train_dataset,
                                           batch_size=self.hyperparams['BATCH_SIZE'],
-                                          shuffle=True,
-                                          pin_memory=self.pin_memory,
-                                          pin_memory_device=self.pin_memory_device)
+                                          shuffle=True)
             valid_dataloader = DataLoader(dataset=valid_dataset,
-                                          batch_size=self.hyperparams['BATCH_SIZE'],
-                                          pin_memory=self.pin_memory,
-                                          pin_memory_device=self.pin_memory_device)
+                                          batch_size=self.hyperparams['BATCH_SIZE'])
 
             # Log the hyperparameters to MLflow
             mlflow.log_params(self.hyperparams)
@@ -286,9 +282,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
             # Define test DataLoader
             test_dataset = TensorDataset(self.X_test, self.y_test)
             test_dataloader = DataLoader(dataset=test_dataset,
-                                         batch_size=self.hyperparams['BATCH_SIZE'],
-                                         pin_memory=self.pin_memory,
-                                         pin_memory_device=self.pin_memory_device)
+                                         batch_size=self.hyperparams['BATCH_SIZE'])
 
             # Gradient computation is not required during evaluation
             with torch.no_grad():
