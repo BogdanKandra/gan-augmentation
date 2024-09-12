@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics as sk_metrics
 import torch
+from torch.utils.data import Subset
 from torchinfo import summary
 from torchvision.datasets import CIFAR10, FashionMNIST
 
@@ -47,6 +48,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
                 self.dataset_shape = config.CIFAR_10_SHAPE
                 self.class_labels = config.CIFAR_10_CLASS_LABELS
 
+        # self.X_train, self.y_train = train_dataset.data[:5000], train_dataset.targets[:5000]
         self.X_train, self.y_train = train_dataset.data, train_dataset.targets
         self.X_test, self.y_test = test_dataset.data, test_dataset.targets
 
@@ -212,13 +214,13 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             predictions = self.model(self.X_test)
             y_pred = torch.argmax(predictions, dim=1)
 
-        report = sk_metrics.classification_report(self.y_test, y_pred, target_names=self.class_labels)
+        report = sk_metrics.classification_report(self.y_test.cpu(), y_pred.cpu(), target_names=self.class_labels)
         report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
         with open(report_path, 'w') as f:
             f.write(report)
-
+ 
         # Generate the confusion matrix
-        cm = sk_metrics.confusion_matrix(self.y_test, y_pred, labels=list(range(len(self.class_labels))))
+        cm = sk_metrics.confusion_matrix(self.y_test.cpu(), y_pred.cpu(), labels=list(range(len(self.class_labels))))
         utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
 
     def export_model(self) -> None:
