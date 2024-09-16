@@ -1,6 +1,7 @@
 import json
 from abc import ABC
 from math import sqrt
+from os import cpu_count
 from random import randrange
 
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ import torch
 import torch.nn.functional as F
 from torchinfo import summary
 from torchvision.datasets import CIFAR10, FashionMNIST
+from torchvision.transforms import ToTensor
 from torchvision.utils import make_grid
 
 from scripts import config, utils
@@ -25,13 +27,15 @@ class TorchVisionDatasetGenerator(TorchVisionDatasetModel, ABC):
         """ Loads the specified dataset and stores it in instance attributes. """
         # Determine the device to be used for storing the data, model, and metrics
         if torch.cuda.is_available():
-            self.device: torch.device = torch.device('cuda')
-            self.pin_memory: bool = True
-            self.pin_memory_device: str = self.device.type
+            self.device: torch.device = torch.device(f'cuda:{torch.cuda.current_device()}')
+            self.dataloader_params: dict = {
+                'num_workers': int(0.9 * cpu_count()),
+                'pin_memory': True,
+                'pin_memory_device': self.device.type
+            }
         else:
             self.device: torch.device = torch.device('cpu')
-            self.pin_memory: bool = False
-            self.pin_memory_device: str = ''
+            self.dataloader_params: dict = {}
 
         # Load the specified dataset
         self.dataset_type: GeneratorDataset = dataset

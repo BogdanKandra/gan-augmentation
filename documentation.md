@@ -1,10 +1,21 @@
 # TODO
 - Implement GANs:
-	- VanillaGAN
+    - GPU problems:
+        - Transfer tensors to GPU only when taking batches from the DataLoader
+            - In torchvision_dataset_generator, create the DataLoader directly, with ToTensor transform
+                - get_maximum_generator_batch_size()
+            - Remove all .to(device) calls
+            - Make sure the batches are transfered to GPU when iterating the DataLoader
+
+    - Also periodically save a checkpoint while training the GAN?
+
 	- DCGAN
-	- Implement both GANs as conditional GANs
-	- Implement both loss functions: BCE loss / W-loss
-	- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
+    - WGAN+GP
+
+- Add the Optional[type] typing hint to all optional method arguments
+- Add the Union[type|type] typing hint to multiple typed arguments
+- Solve the PyTorch GPU requirement problem in requirements.txt
+- Also plot the percentages out of total data in confusion matrix (right under the number)
 
 - Implement Diffusion Models:
 	- DDPM
@@ -42,9 +53,12 @@
     - Don't divide the loss by the batch size when training ???
     - Also save result artifacts in MLflow instead of the `results` directory
     - save_results() optimization when the model is evaluated on the test set
+        - performed batched computation?
     - Solve EfficientNet performance problems
     - Save the best model when early stopping
     - Use the PyTorch profiler: https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html
+    - Also implement the CID Index (Creativity, Inheritance, Diversity) metric for generators:
+        https://shuyueg.github.io/doc/AIPR2019.pdf
 
 - Deployment / inference of model ideas:
     - TorchServe: https://pytorch.org/serve/
@@ -140,8 +154,10 @@ The tests directory contains unit tests for the scripts.
 
 ## PyTorch tutorials
 - https://pytorch.org/tutorials/beginner/introyt/trainingyt.html
+- https://pytorch.org/tutorials/beginner/basics/transforms_tutorial.html
 - https://www.kaggle.com/code/adrynh/pytorch-tutorial-with-fashion-mnist
 - https://www.learnpytorch.io/
+- https://discuss.pytorch.org/t/what-is-the-difference-between-creating-a-validation-set-using-random-split-as-opposed-to-subsetrandomsampler/72462
 
 ## Transfer Learning
 - https://keras.io/examples/vision/image_classification_efficientnet_fine_tuning/#transfer-learning-from-pretrained-weights
@@ -169,3 +185,13 @@ The tests directory contains unit tests for the scripts.
 - https://stackoverflow.com/questions/48152674/how-do-i-check-if-pytorch-is-using-the-gpu/48152675#48152675
 - https://medium.com/@0429shen/cant-train-deep-learning-models-using-gpu-in-pytorch-even-with-a-graphics-card-f61505ed758e
 - https://www.reddit.com/r/pytorch/comments/11izx0i/using_my_gpu_to_train/
+- https://pytorch.org/tutorials/intermediate/pinmem_nonblock.html (Memory Pinning)
+- https://stackoverflow.com/questions/55563376/pytorch-how-does-pin-memory-work-in-dataloader  (<pin_memory> DataLoader argument usage)
+- https://developer.nvidia.com/blog/how-optimize-data-transfers-cuda-cc/  (Memory Pinning)
+- https://www.kaggle.com/code/aisuko/memory-pinning-for-pytorch-dataloader  (Memory Pinning)
+- https://stackoverflow.com/questions/53998282/how-does-the-number-of-workers-parameter-in-pytorch-dataloader-actually-work (<num_workers> DataLoader argument usage)
+
+## GAN Evaluation
+- https://www.sapien.io/blog/the-metrics-and-challenges-of-evaluating-generative-adversarial-networks-gans
+- https://shuyueg.github.io/doc/AIPR2019.pdf  (CID Index metric)
+- https://arxiv.org/abs/1802.03446  (Survey on GAN evaluation measures)

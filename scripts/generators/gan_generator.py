@@ -60,7 +60,7 @@ class GANGenerator(TorchVisionDatasetGenerator):
                                                                             disc_input_shape=self.X.shape[1:],
                                                                             disc_output_shape=1,
                                                                             dataset_size=self.X.shape[0],
-                                                                            max_batch_size=512)
+                                                                            max_batch_size=1024)
                 self.hyperparams['BATCH_SIZE'] = optimal_batch_size
                 del temp_generator, temp_discriminator
             else:

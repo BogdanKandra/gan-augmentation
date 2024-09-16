@@ -112,7 +112,7 @@ class Discriminator(nn.Module):
                      (self.h_dim // 4, self.h_dim // 8)]
                 ]
             case _:
-                raise ValueError('Unsupported dataset type')
+                raise ValueError("Unsupported dataset type")
 
         self.discriminator = nn.Sequential(
             *self.discriminator_blocks,

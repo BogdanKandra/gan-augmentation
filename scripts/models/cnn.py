@@ -26,30 +26,30 @@ class CNN(nn.Module):
                 self.decoder_features = 256 * (config.CIFAR_10_SHAPE[1] // 8) ** 2
                 self.out_features = len(config.CIFAR_10_CLASS_LABELS)
             case _:
-                raise ValueError('Unsupported dataset type')
+                raise ValueError("Unsupported dataset type")
 
         self.conv_block_1 = nn.Sequential(
-            nn.Conv2d(in_channels=self.in_channels, out_channels=64, kernel_size=3, padding='same'),
+            nn.Conv2d(in_channels=self.in_channels, out_channels=64, kernel_size=3, padding="same"),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding='same'),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding="same"),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Dropout(p=0.2)
         )
 
         self.conv_block_2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding='same'),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding="same"),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding='same'),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding="same"),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Dropout(p=0.3)
         )
 
         self.conv_block_3 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding='same'),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding="same"),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding='same'),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding="same"),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
             nn.Dropout(p=0.4)

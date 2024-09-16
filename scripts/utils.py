@@ -28,9 +28,21 @@ LOGGER = get_logger(__name__)
 def is_perfect_square(number: int) -> bool:
     """ Checks whether the given number is a perfect square """
     if type(number) is not int:
-        raise TypeError('Unexpected type for parameter "number" (Expected <int>, given <{}>)'.format(type(number)))
+        raise TypeError("Unexpected type for parameter 'number' (Expected <int>, given <{}>)".format(type(number)))
 
     return int(sqrt(number)) ** 2 == number
+
+
+def one_hot_encode(y: int, num_classes: int) -> torch.Tensor:
+    """ One-hot encodes the given label.
+
+    Arguments:
+        y (int): the label to be encoded
+        num_classes (int): the number of classes to be used
+    """
+    result = torch.zeros(num_classes, dtype=torch.float)
+
+    return result.scatter_(dim=0, index=torch.tensor(y), value=1)
 
 
 def get_maximum_classifier_batch_size(
@@ -61,17 +73,17 @@ def get_maximum_classifier_batch_size(
 
     while True:
         if max_batch_size is not None and batch_size >= max_batch_size:
-            LOGGER.info(f'>>> Batch size reached maximum specified value: {batch_size}!')
+            LOGGER.info(f">>> Batch size reached maximum specified value: {max_batch_size}!")
             batch_size = max_batch_size
             break
 
         if batch_size >= dataset_size:
-            LOGGER.info(f'>>> Batch size exceeded dataset size: {batch_size}!')
+            LOGGER.info(f">>> Batch size exceeded dataset size: {dataset_size}!")
             batch_size //= 2
             break
 
         try:
-            LOGGER.info(f'> Trying batch size {batch_size}...')
+            LOGGER.info(f"> Trying batch size {batch_size}...")
 
             for _ in range(num_iterations):
                 inputs = torch.randn((batch_size, *input_shape), dtype=torch.float32, device=device)
@@ -84,11 +96,11 @@ def get_maximum_classifier_batch_size(
 
             batch_size *= 2
         except RuntimeError:
-            LOGGER.info(f'>>> Batch size {batch_size} led to OOM error!')
+            LOGGER.info(f">>> Batch size {batch_size} led to OOM error!")
             batch_size //= 2
             break
 
-    LOGGER.info(f'>>> Optimal batch size is set to {batch_size}.')
+    LOGGER.info(f">>> Optimal batch size is set to {batch_size}.")
     torch.cuda.empty_cache()
 
     return batch_size
@@ -129,17 +141,17 @@ def get_maximum_generator_batch_size(
 
     while True:
         if max_batch_size is not None and batch_size >= max_batch_size:
-            LOGGER.info(f'>>> Batch size reached maximum specified value: {batch_size}!')
+            LOGGER.info(f">>> Batch size reached maximum specified value: {max_batch_size}!")
             batch_size = max_batch_size
             break
 
         if batch_size >= dataset_size:
-            LOGGER.info(f'>>> Batch size exceeded dataset size: {batch_size}!')
+            LOGGER.info(f">>> Batch size exceeded dataset size: {dataset_size}!")
             batch_size //= 2
             break
 
         try:
-            LOGGER.info(f'> Trying batch size {batch_size}...')
+            LOGGER.info(f"> Trying batch size {batch_size}...")
 
             for _ in range(num_iterations):
                 # Train the discriminator
@@ -174,11 +186,11 @@ def get_maximum_generator_batch_size(
 
             batch_size *= 2
         except RuntimeError:
-            LOGGER.info(f'>>> Batch size {batch_size} led to OOM error!')
+            LOGGER.info(f">>> Batch size {batch_size} led to OOM error!")
             batch_size //= 2
             break
 
-    LOGGER.info(f'>>> Optimal batch size is set to {batch_size}.')
+    LOGGER.info(f">>> Optimal batch size is set to {batch_size}.")
     torch.cuda.empty_cache()
 
     return batch_size
@@ -186,57 +198,57 @@ def get_maximum_generator_batch_size(
 
 def plot_classification_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
     """ Plots the training and validation accuracy and loss for a classifier model """
-    training_accuracy = history['accuracy']
-    validation_accuracy = history['val_accuracy']
-    training_loss = history['loss']
-    validation_loss = history['val_loss']
+    training_accuracy = history["accuracy"]
+    validation_accuracy = history["val_accuracy"]
+    training_loss = history["loss"]
+    validation_loss = history["val_loss"]
 
     plt.figure(figsize=(18, 10))
     plt.subplot(2, 1, 1)
-    plt.plot(training_accuracy, label='Training Accuracy')
-    plt.plot(validation_accuracy, label='Validation Accuracy')
+    plt.plot(training_accuracy, label="Training Accuracy")
+    plt.plot(validation_accuracy, label="Validation Accuracy")
     plt.legend()
-    plt.ylabel('Accuracy')
+    plt.ylabel("Accuracy")
     plt.ylim([min(plt.ylim()), 1])
-    plt.title('Training and Validation Accuracy')
+    plt.title("Training and Validation Accuracy")
 
     plt.subplot(2, 1, 2)
-    plt.plot(training_loss, label='Training Loss')
-    plt.plot(validation_loss, label='Validation Loss')
+    plt.plot(training_loss, label="Training Loss")
+    plt.plot(validation_loss, label="Validation Loss")
     plt.legend()
-    plt.xlabel('Epoch')
-    plt.ylabel('Categorical Cross Entropy')
+    plt.xlabel("Epoch")
+    plt.ylabel("Categorical Cross Entropy")
     plt.ylim([0, max(plt.ylim())])
-    plt.title('Training and Validation Loss')
+    plt.title("Training and Validation Loss")
 
-    figure_path = config.CLASSIFIER_RESULTS_PATH / subdirectory_name / 'Training Results.png'
+    figure_path = config.CLASSIFIER_RESULTS_PATH / subdirectory_name / "Training Results.png"
     plt.savefig(figure_path, dpi=300)
     plt.close()
 
 
 def plot_generation_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
     """ Plots the discriminator and generator losses """
-    discriminator_loss = history['discriminator_loss']
-    generator_loss = history['generator_loss']
+    discriminator_loss = history["discriminator_loss"]
+    generator_loss = history["generator_loss"]
 
     plt.figure(figsize=(18, 10))
-    plt.plot(discriminator_loss, label='Discriminator Loss')
-    plt.plot(generator_loss, label='Generator Loss')
+    plt.plot(discriminator_loss, label="Discriminator Loss")
+    plt.plot(generator_loss, label="Generator Loss")
     plt.legend()
-    plt.xlabel('Epoch')
-    plt.ylabel('Categorical Cross Entropy')
+    plt.xlabel("Epoch")
+    plt.ylabel("Categorical Cross Entropy")
     plt.ylim([0, max(plt.ylim())])
-    plt.title('Discriminator and Generator Losses')
+    plt.title("Discriminator and Generator Losses")
 
-    figure_path = config.GENERATOR_RESULTS_PATH / subdirectory_name / 'Training Results.png'
+    figure_path = config.GENERATOR_RESULTS_PATH / subdirectory_name / "Training Results.png"
     plt.savefig(figure_path, dpi=300)
     plt.close()
 
 
 def plot_confusion_matrix(conf_matrix: np.array, subdirectory_name: str, labels_list: List[str]) -> None:
-    title = 'Confusion Matrix'
+    title = "Confusion Matrix"
 
-    plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.imshow(conf_matrix, interpolation="nearest", cmap=plt.cm.Blues)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(labels_list))
@@ -246,11 +258,11 @@ def plot_confusion_matrix(conf_matrix: np.array, subdirectory_name: str, labels_
     fmt = 'd'
     thresh = conf_matrix.max() / 2.
     for i, j in itertools.product(range(conf_matrix.shape[0]), range(conf_matrix.shape[1])):
-        plt.text(j, i, format(conf_matrix[i, j], fmt), horizontalalignment='center',
-                 color='white' if conf_matrix[i, j] > thresh else 'black')
+        plt.text(j, i, format(conf_matrix[i, j], fmt), horizontalalignment="center",
+                 color="white" if conf_matrix[i, j] > thresh else "black")
 
     plt.tight_layout()
-    plt.xlabel('Predicted label')
-    plt.ylabel('True label')
-    plt.savefig(config.CLASSIFIER_RESULTS_PATH / subdirectory_name / '{}.png'.format(title), dpi=300)
+    plt.xlabel("Predicted label")
+    plt.ylabel("True label")
+    plt.savefig(config.CLASSIFIER_RESULTS_PATH / subdirectory_name / "{}.png".format(title), dpi=300)
     plt.close()

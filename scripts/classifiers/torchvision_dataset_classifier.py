@@ -1,15 +1,15 @@
 import json
 from abc import ABC
 from math import sqrt
+from os import cpu_count
 from random import randrange
 
 import matplotlib.pyplot as plt
-import numpy as np
 import sklearn.metrics as sk_metrics
 import torch
-from torch.utils.data import Subset
+from torch.utils.data import DataLoader
 from torchinfo import summary
-from torchvision.datasets import CIFAR10, FashionMNIST
+from tqdm import tqdm
 
 from scripts import config, utils
 from scripts.config import ClassifierDataset
@@ -22,50 +22,40 @@ LOGGER = utils.get_logger(__name__)
 class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
     """ Abstract class representing the blueprint all classifiers on TorchVision datasets must follow """
     def __init__(self, dataset: ClassifierDataset) -> None:
-        """ Loads the specified dataset and stores it in instance attributes. """
-        # Determine the device to be used for storing the data, model, and metrics
-        if torch.cuda.is_available():
-            self.device: torch.device = torch.device('cuda')
-            self.pin_memory: bool = True
-            self.pin_memory_device: str = self.device.type
-        else:
-            self.device: torch.device = torch.device('cpu')
-            self.pin_memory: bool = False
-            self.pin_memory_device: str = ''
-
-        # Load the specified dataset
-        self.dataset_type: ClassifierDataset = dataset
-
-        match self.dataset_type:
+        """ Sets up the necessary fields for the classifier. """
+        # Validate and set the dataset type to be used
+        match dataset:
             case ClassifierDataset.FASHION_MNIST:
-                train_dataset = FashionMNIST(root='data', train=True, download=True)
-                test_dataset = FashionMNIST(root='data', train=False, download=True)
                 self.dataset_shape = config.FASHION_MNIST_SHAPE
                 self.class_labels = config.FASHION_MNIST_CLASS_LABELS
             case ClassifierDataset.CIFAR_10:
-                train_dataset = CIFAR10(root='data', train=True, download=True)
-                test_dataset = CIFAR10(root='data', train=False, download=True)
                 self.dataset_shape = config.CIFAR_10_SHAPE
                 self.class_labels = config.CIFAR_10_CLASS_LABELS
+            case _:
+                raise ValueError("Unavailable dataset type")
 
-        # self.X_train, self.y_train = train_dataset.data[:5000], train_dataset.targets[:5000]
-        self.X_train, self.y_train = train_dataset.data, train_dataset.targets
-        self.X_test, self.y_test = test_dataset.data, test_dataset.targets
+        self.dataset_type: ClassifierDataset = dataset
 
-        # Convert numpy arrays to torch tensors and move to GPU if available
-        if type(self.X_train) is np.ndarray:
-            self.X_train = torch.from_numpy(self.X_train).to(self.device)
-            self.X_test = torch.from_numpy(self.X_test).to(self.device)
-            self.y_train = torch.tensor(self.y_train).to(self.device)
-            self.y_test = torch.tensor(self.y_test).to(self.device)
+        # Determine the device to be used for storing the data, model, and metrics
+        if torch.cuda.is_available():
+            self.device: torch.device = torch.device(f"cuda:{torch.cuda.current_device()}")
+            self.non_blocking = True
+            self.dataloader_params: dict = {
+                "num_workers": int(0.9 * cpu_count()),
+                "pin_memory": True,
+                "pin_memory_device": self.device.type
+            }
+        else:
+            self.device: torch.device = torch.device("cpu")
+            self.non_blocking = False
+            self.dataloader_params: dict = {}
 
-        # Split the training dataset into a training and validation set
-        validation_size = int(config.VALID_SET_PERCENTAGE * len(self.X_train))
-        self.X_valid = self.X_train[: validation_size]
-        self.y_valid = self.y_train[: validation_size]
-        self.X_train = self.X_train[validation_size:]
-        self.y_train = self.y_train[validation_size:]
-
+        self.train_dataset = None
+        self.test_dataset = None
+        self.train_sampler = None
+        self.valid_sampler = None
+        self.batch_shape = None
+        self.labels_shape = None
         self.preprocessed = False
 
         self.model = None
@@ -80,25 +70,49 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
     @classmethod
     def __subclasshook__(cls, subclass) -> bool:
-        return (hasattr(subclass, 'preprocess_dataset') and callable(subclass.preprocess_dataset) and
-                hasattr(subclass, 'build_model') and callable(subclass.build_model) and
-                hasattr(subclass, 'train_model') and callable(subclass.train_model) and
-                hasattr(subclass, 'evaluate_model') and callable(subclass.evaluate_model))
+        return (hasattr(subclass, "preprocess_dataset") and callable(subclass.preprocess_dataset) and
+                hasattr(subclass, "build_model") and callable(subclass.build_model) and
+                hasattr(subclass, "train_model") and callable(subclass.train_model) and
+                hasattr(subclass, "evaluate_model") and callable(subclass.evaluate_model))
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory. """
-        LOGGER.info(f'>>> Train Set Information:\n\tshape: X_train.shape={self.X_train.shape}, '
-                    f'y_train.shape={self.y_train.shape}\n\tdtype: X_train.dtype={self.X_train.dtype}, '
-                    f'y_train.dtype={self.y_train.dtype}\n\tdevice: X_train.device={self.X_train.device}, '
-                    f'y_train.device={self.y_train.device}')
-        LOGGER.info(f'>>> Validation Set Information:\n\tshape: X_valid.shape={self.X_valid.shape}, '
-                    f'y_valid.shape={self.y_valid.shape}\n\tdtype: X_valid.dtype={self.X_valid.dtype}, '
-                    f'y_valid.dtype={self.y_valid.dtype}\n\tdevice: X_valid.device={self.X_valid.device}, '
-                    f'y_valid.device={self.y_valid.device}')
-        LOGGER.info(f'>>> Test Set Information:\n\tshape: X_test.shape={self.X_test.shape}, '
-                    f'y_test.shape={self.y_test.shape}\n\tdtype: X_test.dtype={self.X_test.dtype}, '
-                    f'y_test.dtype={self.y_test.dtype}\n\tdevice: X_test.device={self.X_test.device}, '
-                    f'y_test.device={self.y_test.device}')
+        train_dataloader = DataLoader(dataset=self.train_dataset, sampler=self.train_sampler)
+        valid_dataloader = DataLoader(dataset=self.train_dataset, sampler=self.valid_sampler)
+        test_dataloader = DataLoader(dataset=self.test_dataset)
+
+        for stage, dataloader in zip(["train", "valid", "test"],
+                                     [train_dataloader, valid_dataloader, test_dataloader]):
+            batch, labels = next(iter(dataloader))
+            batch = batch.to(self.device, non_blocking=self.non_blocking)
+            labels = labels.to(self.device, non_blocking=self.non_blocking)
+
+            if stage == "train":
+                X_shape = (len(self.train_sampler), *batch.shape[1:])
+                y_shape = (len(self.train_sampler), *labels.shape[1:])
+            elif stage == "valid":
+                X_shape = (len(self.valid_sampler), *batch.shape[1:])
+                y_shape = (len(self.valid_sampler), *labels.shape[1:])
+            elif stage == "test":
+                X_shape = (self.test_dataset.data.shape[0], *batch.shape[1:])
+                y_shape = (self.test_dataset.data.shape[0], *labels.shape[1:])
+
+            X_dtype = batch.dtype
+            X_device = batch.device
+            X_pinned = batch.is_pinned()
+            y_dtype = labels.dtype
+            y_device = labels.device
+            y_pinned = labels.is_pinned()
+
+            LOGGER.info(f">>> {stage.capitalize()} Set Information:\n\tshape: X_{stage}.shape={X_shape}, "
+                        f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={X_dtype}, "
+                        f"y_{stage}.dtype={y_dtype}\n\tdevice: X_{stage}.device={X_device}, "
+                        f"y_{stage}.device={y_device}\n\tpinned: X_{stage} is_pinned(): {X_pinned}, "
+                        f"y_{stage} is_pinned(): {y_pinned}")
+
+        # Store the batch shape for use in other functions
+        self.batch_shape = batch.shape
+        self.labels_shape = labels.shape
 
     def display_dataset_sample(self, num_samples: int = 9) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
@@ -108,9 +122,9 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             num_samples (int, optional): the number of images to be displayed
         """
         # Parameter validation
-        max_samples = min(self.X_train.shape[0], 100)
+        max_samples = min(len(self.train_sampler), 100)
         if num_samples > max_samples:
-            raise ValueError(f'Maximum count of images to be displayed is {max_samples}')
+            raise ValueError(f"Maximum count of images to be displayed is {max_samples}")
 
         # Compute the plotting grid size as the next perfect square from num_samples
         if utils.is_perfect_square(num_samples):
@@ -122,113 +136,124 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             grid_size = int(sqrt(next_perfect_square))
 
         # Compute the cmap used for displaying the images
-        if self.X_train.shape[1] == 1:
-            cmap = plt.get_cmap('gray')
+        if self.batch_shape[1] == 1:
+            cmap = plt.get_cmap("gray")
         else:
             cmap = plt.get_cmap(None)
 
         # Plot random samples
-        indices = [randrange(0, self.X_train.shape[0]) for _ in range(num_samples)]
+        indices = [randrange(0, len(self.train_sampler)) for _ in range(num_samples)]
         indices.extend([-1] * (grid_size ** 2 - num_samples))  # Pad with -1 for empty spaces
 
         _, axes = plt.subplots(grid_size, grid_size, figsize=(8, 8))
         for ax, i in zip(axes.flat, indices):
-            if i == -1:
-                ax.axis('off')
-            else:
-                # Image must be on the CPU and channels-last for matplotlib
-                sample = self.X_train[i].to('cpu').permute(1, 2, 0)
-                label = self.class_labels[self.y_train[i]]
+            if i != -1:
+                # Image must be channels-last for matplotlib
+                sample, label = self.train_dataset[i]
+                sample = sample.permute(1, 2, 0)
+                label = self.class_labels[label]
                 ax.imshow(sample, cmap=cmap)
                 ax.set_title(label)
-                ax.axis('off')
+
+            ax.axis("off")
 
         plt.show()
 
     def display_model(self) -> None:
         """ Logs information about the model currently in memory. """
         if self.model is not None:
-            # Pass the channel size as 3 when fine tuning a classifier
-            # pretrained on 3-channel images, on a grayscale dataset
-            input_shape = self.dataset_shape
-            if self.dataset_type == ClassifierDataset.FASHION_MNIST and self.X_train.shape[1] == 3:
-                input_shape = (3, self.dataset_shape[1], self.dataset_shape[2])
+            LOGGER.info(">>> Network components:")
+            LOGGER.info(f"{self.model}\n\n")
+            LOGGER.info(">>> Torchinfo summary:")
 
-            LOGGER.info('>>> Network components:')
-            LOGGER.info(self.model)
-            LOGGER.info('>>> Torchinfo summary:')
+            self.model.eval()
             summary(
                 self.model,
-                input_size=(1, *input_shape),
+                input_size=(1, *self.batch_shape[1:]),
                 col_names=["input_size", "output_size", "num_params",
                            "params_percent", "kernel_size", "mult_adds", "trainable"],
                 device=self.device,
                 verbose=1
             )
         else:
-            LOGGER.info('>>> There is currently no model for this classifier')
+            LOGGER.info(">>> There is currently no model for this classifier")
 
     def save_results(self) -> None:
         """ Saves the current training run results by plotting training and validation accuracy and loss,
         and generating the classification report and confusion matrix. """
         # Generate a file containing model information and parameters
-        training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Information.txt'
-        with open(training_info_path, 'w') as f:
-            f.write('MODEL ARCHITECTURE:\n')
-            f.write('------------------------------\n')
-            for line in str(self.model).split('\n'):
-                f.write(f'{line}\n')
+        training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / "Training Information.txt"
+        with open(training_info_path, "w") as f:
+            f.write("MODEL ARCHITECTURE:\n")
+            f.write("------------------------------\n")
+            for line in str(self.model).split("\n"):
+                f.write(f"{line}\n")
 
-            f.write('\nOPTIMIZER:\n')
-            f.write('------------------------------\n')
-            for line in str(self.optimizer).split('\n'):
-                f.write(f'{line}\n')
+            f.write("\nOPTIMIZER:\n")
+            f.write("------------------------------\n")
+            for line in str(self.optimizer).split("\n"):
+                f.write(f"{line}\n")
 
-            f.write('\nLOSS FUNCTION:\n')
-            f.write('------------------------------\n')
-            f.write(f'{str(self.loss)}\n')
+            f.write("\nLOSS FUNCTION:\n")
+            f.write("------------------------------\n")
+            f.write(f"{str(self.loss)}\n")
 
-            f.write('\nHYPERPARAMETERS:\n')
-            f.write('------------------------------\n')
-            f.write(f'Batch Size: {self.hyperparams["BATCH_SIZE"]}\n')
-            f.write(f'Early Stopping Tolerance: {self.hyperparams["EARLY_STOPPING_TOLERANCE"]}\n')
-            f.write(f'Learning Rate: {self.hyperparams["LEARNING_RATE"]}\n')
-            f.write(f'Number of Epochs: {self.hyperparams["NUM_EPOCHS"]}\n')
+            f.write("\nHYPERPARAMETERS:\n")
+            f.write("------------------------------\n")
+            f.write(f"Batch Size: {self.hyperparams['BATCH_SIZE']}\n")
+            f.write(f"Early Stopping Tolerance: {self.hyperparams['EARLY_STOPPING_TOLERANCE']}\n")
+            f.write(f"Learning Rate: {self.hyperparams['LEARNING_RATE']}\n")
+            f.write(f"Number of Epochs: {self.hyperparams['NUM_EPOCHS']}\n")
 
         # Plot the train and validation accuracy and loss
         utils.plot_classification_results(self.results_subdirectory, self.training_history)
 
         # Save the train and validation sets results
-        results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Training Results.txt'
-        with open(results_path, 'w') as f:
+        results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / "Training Results.txt"
+        with open(results_path, "w") as f:
             f.write(json.dumps(self.training_history, indent=4))
 
         # Save the testing set results
-        results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Testing Results.txt'
-        with open(results_path, 'w') as f:
+        results_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / "Testing Results.txt"
+        with open(results_path, "w") as f:
             f.write(json.dumps(self.evaluation_results, indent=4))
 
         # Generate the classification report
+        test_dataloader = DataLoader(dataset=self.test_dataset,
+                                     batch_size=self.hyperparams["BATCH_SIZE"],
+                                     **self.dataloader_params)
+
         with torch.no_grad():
             self.model.eval()
-            predictions = self.model(self.X_test)
+            predictions = []
+
+            for X_batch, y_batch in tqdm(test_dataloader):
+                X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
+                y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
+                predictions.append(self.model(X_batch))
+
+            predictions = torch.cat(predictions, dim=0)
             y_pred = torch.argmax(predictions, dim=1)
 
-        report = sk_metrics.classification_report(self.y_test.cpu(), y_pred.cpu(), target_names=self.class_labels)
-        report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / 'Classification Report.txt'
-        with open(report_path, 'w') as f:
+        report = sk_metrics.classification_report(self.test_dataset.targets,
+                                                  y_pred.cpu(),
+                                                  target_names=self.class_labels)
+        report_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / "Classification Report.txt"
+        with open(report_path, "w") as f:
             f.write(report)
- 
+
         # Generate the confusion matrix
-        cm = sk_metrics.confusion_matrix(self.y_test.cpu(), y_pred.cpu(), labels=list(range(len(self.class_labels))))
+        cm = sk_metrics.confusion_matrix(self.test_dataset.targets,
+                                         y_pred.cpu(),
+                                         labels=list(range(len(self.class_labels))))
         utils.plot_confusion_matrix(cm, self.results_subdirectory, self.class_labels)
 
     def export_model(self) -> None:
         """ Exports the model currently in memory in ONNX format. """
         classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
         classifier_artifacts_path.mkdir()
-        model_path = classifier_artifacts_path / 'model.onnx'
-        dummy_input = torch.randn(1, *self.dataset_shape, device=self.device)
+        model_path = classifier_artifacts_path / "model.onnx"
+        dummy_input = torch.randn(1, *self.batch_shape, device=self.device)
         self.model.eval()
         onnx_program = torch.onnx.dynamo_export(self.model, dummy_input)
         onnx_program.save(str(model_path))
