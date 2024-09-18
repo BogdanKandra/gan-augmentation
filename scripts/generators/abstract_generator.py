@@ -113,7 +113,8 @@ class AbstractGenerator(AbstractModel, ABC):
         # Parameter validation
         max_samples = min(self.train_dataset.data.shape[0], 100)
         if num_samples > max_samples:
-            raise ValueError(f"Maximum count of images to be displayed is {max_samples}")
+            LOGGER.info(f"> Maximum number of images to be displayed is {max_samples}")
+            num_samples = max_samples
 
         # Compute the plotting grid size as the next perfect square from num_samples
         if utils.is_perfect_square(num_samples):
@@ -147,6 +148,24 @@ class AbstractGenerator(AbstractModel, ABC):
 
             ax.axis("off")
 
+        plt.show()
+
+    def display_image_batch(self, images: torch.Tensor, num_samples: int = 25) -> None:
+        """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
+        min(100, dataset_size).
+
+        Arguments:
+            images (torch.Tensor): the images to be displayed
+            num_samples (int, optional): the number of images to be displayed
+        """
+        # Parameter validation
+        if num_samples > images.shape[0]:
+            LOGGER.info(f"> Maximum number of images to be displayed is {images.shape[0]}")
+            num_samples = images.shape[0]
+
+        images = images.detach().cpu()
+        image_grid = make_grid(images[:num_samples], nrow=5)
+        plt.imshow(image_grid.permute(1, 2, 0).squeeze())
         plt.show()
 
     def display_model(self) -> None:
@@ -244,7 +263,8 @@ class AbstractGenerator(AbstractModel, ABC):
 
         self.model.eval()
         dummy_noise = torch.randn((1, self.model.z_dim), device=self.device)
-        dummy_labels = torch.zeros((1, len(self.class_labels)), device=self.device).scatter_(dim=1, index=3, value=1)
+        dummy_labels = torch.zeros((1, len(self.class_labels)), device=self.device)\
+                            .scatter_(dim=1, index=torch.tensor((3,)).unsqueeze(0), value=1)
 
         onnx_program = torch.onnx.dynamo_export(self.model, dummy_noise, dummy_labels)
         onnx_program.save(str(model_path))
@@ -268,18 +288,3 @@ class AbstractGenerator(AbstractModel, ABC):
         current_run_dir_path.mkdir()
 
         self.results_subdirectory = current_run_dir_name
-
-    def _display_image_batch(self, images: torch.Tensor, num_samples: int = 25) -> None:
-        """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
-        min(100, dataset_size).
-
-        Arguments:
-            images (torch.Tensor): the images to be displayed
-            num_samples (int, optional): the number of images to be displayed
-        """
-        if num_samples > images.shape[0]:
-            num_samples = images.shape[0]
-        images = images.detach().cpu()
-        image_grid = make_grid(images[:num_samples], nrow=5)
-        plt.imshow(image_grid.permute(1, 2, 0).squeeze())
-        plt.show()
