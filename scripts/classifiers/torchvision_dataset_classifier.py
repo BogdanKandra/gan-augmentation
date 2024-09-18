@@ -92,15 +92,16 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             batch = batch.to(self.device, non_blocking=self.non_blocking)
             labels = labels.to(self.device, non_blocking=self.non_blocking)
 
-            if stage == "train":
-                X_shape = (len(self.train_sampler), *batch.shape[1:])
-                y_shape = (len(self.train_sampler), *labels.shape[1:])
-            elif stage == "valid":
-                X_shape = (len(self.valid_sampler), *batch.shape[1:])
-                y_shape = (len(self.valid_sampler), *labels.shape[1:])
-            elif stage == "test":
-                X_shape = (self.test_dataset.data.shape[0], *batch.shape[1:])
-                y_shape = (self.test_dataset.data.shape[0], *labels.shape[1:])
+            match stage:
+                case "train":
+                    X_shape = (len(self.train_sampler), *batch.shape[1:])
+                    y_shape = (len(self.train_sampler), *labels.shape[1:])
+                case "valid":
+                    X_shape = (len(self.valid_sampler), *batch.shape[1:])
+                    y_shape = (len(self.valid_sampler), *labels.shape[1:])
+                case "test":
+                    X_shape = (self.test_dataset.data.shape[0], *batch.shape[1:])
+                    y_shape = (self.test_dataset.data.shape[0], *labels.shape[1:])
 
             LOGGER.info(f">>> {stage.capitalize()} Set Information:\n\tshape: X_{stage}.shape={X_shape}, "
                         f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={batch.dtype}, "
