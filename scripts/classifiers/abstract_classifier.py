@@ -250,8 +250,10 @@ class AbstractClassifier(AbstractModel, ABC):
         classifier_artifacts_path = config.CLASSIFIERS_PATH / self.results_subdirectory
         classifier_artifacts_path.mkdir()
         model_path = classifier_artifacts_path / "model.onnx"
-        dummy_input = torch.randn(1, *self.batch_shape, device=self.device)
+
         self.model.eval()
+        dummy_input = torch.randn(1, *self.batch_shape, device=self.device)
+
         onnx_program = torch.onnx.dynamo_export(self.model, dummy_input)
         onnx_program.save(str(model_path))
 
