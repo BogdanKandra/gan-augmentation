@@ -1,3 +1,3 @@
-from scripts.classifiers.torchvision_dataset_classifier import TorchVisionDatasetClassifier
+from scripts.classifiers.abstract_classifier import AbstractClassifier
 
-__all__ = ['TorchVisionDatasetClassifier']
+__all__ = ["AbstractClassifier"]

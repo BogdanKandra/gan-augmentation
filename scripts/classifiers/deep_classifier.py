@@ -12,13 +12,13 @@ from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import TorchVisionDatasetClassifier
+from scripts.classifiers import AbstractClassifier
 from scripts.models.dnn import DNN
 
 LOGGER = utils.get_logger(__name__)
 
 
-class DNNClassifier(TorchVisionDatasetClassifier):
+class DNN_Classifier(AbstractClassifier):
     """ Class representing a classifier for Torchvision datasets, using a deep neural network """
     def preprocess_dataset(self) -> None:
         """ Loads the specified dataset and preprocesses it by converting to channels-first torch.FloatTensor, and

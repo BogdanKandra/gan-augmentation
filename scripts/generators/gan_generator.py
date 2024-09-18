@@ -11,13 +11,13 @@ from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.generators.torchvision_dataset_generator import TorchVisionDatasetGenerator
+from scripts.generators.abstract_generator import AbstractGenerator
 from scripts.models.gan import Generator, Discriminator
 
 LOGGER = utils.get_logger(__name__)
 
 
-class GANGenerator(TorchVisionDatasetGenerator):
+class GAN_Generator(AbstractGenerator):
     """ Class representing a generator for TorchVision datasets,
     using a vanilla Generative Adversarial Network (GAN) """
     def preprocess_dataset(self) -> None:

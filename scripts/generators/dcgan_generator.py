@@ -1,10 +1,10 @@
 from scripts import utils
-from scripts.generators.torchvision_dataset_generator import TorchVisionDatasetGenerator
+from scripts.generators.abstract_generator import AbstractGenerator
 
 LOGGER = utils.get_logger(__name__)
 
 
-class DCGANGenerator(TorchVisionDatasetGenerator):
+class DCGAN_Generator(AbstractGenerator):
     """ Class representing a generator for TorchVision datasets,
     using a Deep Convolutional Generative Adversarial Network (DCGAN) """
     def preprocess_dataset(self) -> None:

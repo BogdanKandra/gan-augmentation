@@ -12,13 +12,13 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import TorchVisionDatasetClassifier
+from scripts.classifiers import AbstractClassifier
 from scripts.models.efficient_net import EfficientNet
 
 LOGGER = utils.get_logger(__name__)
 
 
-class EfficientNetClassifier(TorchVisionDatasetClassifier):
+class EfficientNet_Classifier(AbstractClassifier):
     """ Class representing a classifier for Torchvision datasets, using the transfer learning approach """
     def preprocess_dataset(self) -> None:
         """ Loads the specified dataset and preprocesses it. The data is converted to channels-first torch.FloatTensor,

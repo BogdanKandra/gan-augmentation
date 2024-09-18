@@ -1,3 +1,3 @@
-from scripts.interfaces.torchvision_dataset_model import TorchVisionDatasetModel
+from scripts.interfaces.abstract_model import AbstractModel
 
-__all__ = ['TorchVisionDatasetModel']
+__all__ = ['AbstractModel']

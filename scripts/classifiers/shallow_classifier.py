@@ -12,13 +12,13 @@ from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.classifiers import TorchVisionDatasetClassifier
+from scripts.classifiers import AbstractClassifier
 from scripts.models.snn import SNN
 
 LOGGER = utils.get_logger(__name__)
 
 
-class SNNClassifier(TorchVisionDatasetClassifier):
+class SNN_Classifier(AbstractClassifier):
     """ Class representing a classifier for Torchvision datasets, using a shallow neural network """
     def preprocess_dataset(self) -> None:
         """ Loads the specified dataset and preprocesses it by converting to channels-first torch.FloatTensor, and
