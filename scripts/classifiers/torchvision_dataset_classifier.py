@@ -97,18 +97,11 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
                 X_shape = (self.test_dataset.data.shape[0], *batch.shape[1:])
                 y_shape = (self.test_dataset.data.shape[0], *labels.shape[1:])
 
-            X_dtype = batch.dtype
-            X_device = batch.device
-            X_pinned = batch.is_pinned()
-            y_dtype = labels.dtype
-            y_device = labels.device
-            y_pinned = labels.is_pinned()
-
             LOGGER.info(f">>> {stage.capitalize()} Set Information:\n\tshape: X_{stage}.shape={X_shape}, "
-                        f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={X_dtype}, "
-                        f"y_{stage}.dtype={y_dtype}\n\tdevice: X_{stage}.device={X_device}, "
-                        f"y_{stage}.device={y_device}\n\tpinned: X_{stage} is_pinned(): {X_pinned}, "
-                        f"y_{stage} is_pinned(): {y_pinned}")
+                        f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={batch.dtype}, "
+                        f"y_{stage}.dtype={labels.dtype}\n\tdevice: X_{stage}.device={batch.device}, "
+                        f"y_{stage}.device={labels.device}\n\tpinned: X_{stage} is_pinned(): {batch.is_pinned()}, "
+                        f"y_{stage} is_pinned(): {labels.is_pinned()}")
 
         # Store the batch shape for use in other functions
         self.batch_shape = batch.shape
