@@ -33,18 +33,6 @@ def is_perfect_square(number: int) -> bool:
     return int(sqrt(number)) ** 2 == number
 
 
-def one_hot_encode(y: int, num_classes: int) -> torch.Tensor:
-    """ One-hot encodes the given label.
-
-    Arguments:
-        y (int): the label to be encoded
-        num_classes (int): the number of classes to be used
-    """
-    result = torch.zeros(num_classes, dtype=torch.float)
-
-    return result.scatter_(dim=0, index=torch.tensor(y), value=1)
-
-
 def get_maximum_classifier_batch_size(
     model: nn.Module,
     device: torch.device,
