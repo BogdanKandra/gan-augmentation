@@ -184,6 +184,20 @@ def get_maximum_generator_batch_size(
     return batch_size
 
 
+def initialize_weights(m: nn.Module) -> None:
+    """ Initializes the weights of the model. """
+    if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+        nn.init.normal_(m.weight, 0.0, 0.02)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.normal_(m.weight, 0.0, 0.02)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Linear):
+        nn.init.normal_(m.weight, 0, 0.01)
+        nn.init.constant_(m.bias, 0)
+
+
 def plot_classification_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
     """ Plots the training and validation accuracy and loss for a classifier model """
     training_accuracy = history["accuracy"]
