@@ -103,7 +103,6 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
                         f"y_{stage}.device={labels.device}\n\tpinned: X_{stage} is_pinned(): {batch.is_pinned()}, "
                         f"y_{stage} is_pinned(): {labels.is_pinned()}")
 
-        # Store the batch shape for use in other functions
         self.batch_shape = batch.shape
         self.labels_shape = labels.shape
 
@@ -172,8 +171,7 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
             LOGGER.info(">>> There is currently no model for this classifier")
 
     def save_results(self) -> None:
-        """ Saves the current training run results by plotting training and validation accuracy and loss,
-        and generating the classification report and confusion matrix. """
+        """ Saves the current model information and training run results. """
         # Generate a file containing model information and parameters
         training_info_path = config.CLASSIFIER_RESULTS_PATH / self.results_subdirectory / "Training Information.txt"
         with open(training_info_path, "w") as f:
