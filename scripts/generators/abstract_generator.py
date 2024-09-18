@@ -241,9 +241,12 @@ class AbstractGenerator(AbstractModel, ABC):
         generator_artifacts_path = config.GENERATORS_PATH / self.results_subdirectory
         generator_artifacts_path.mkdir()
         model_path = generator_artifacts_path / "model.onnx"
-        dummy_input = torch.randn(1, self.model.z_dim, device=self.device)
+
         self.model.eval()
-        onnx_program = torch.onnx.dynamo_export(self.model, dummy_input)
+        dummy_noise = torch.randn((1, self.model.z_dim), device=self.device)
+        dummy_labels = torch.zeros((1, len(self.class_labels)), device=self.device).scatter_(dim=1, index=3, value=1)
+
+        onnx_program = torch.onnx.dynamo_export(self.model, dummy_noise, dummy_labels)
         onnx_program.save(str(model_path))
 
     def _create_current_run_directory(self) -> None:
