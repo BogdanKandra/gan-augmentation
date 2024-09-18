@@ -22,7 +22,7 @@ class SNNClassifier(TorchVisionDatasetClassifier):
     """ Class representing a classifier for Torchvision datasets, using a shallow neural network """
     def preprocess_dataset(self) -> None:
         """ Loads the specified dataset and preprocesses it by converting to channels-first torch.FloatTensor, and
-        scaling the values to the [0.0, 1.0] range. If the dataset is grayscale, the channel dimension is squeezed.
+        scaling the values to the [0.0, 1.0] range. If the dataset is grayscale, the channel dimension is squeezed in.
         The preprocessing is only applied when iterating over the dataset with a DataLoader. """
         if not self.preprocessed:
             # Load the dataset and apply the preprocessing transform
@@ -83,7 +83,7 @@ class SNNClassifier(TorchVisionDatasetClassifier):
                 self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_model
             else:
-                LOGGER.info(">>> GPU not available, skipping batch size computation...")
+                LOGGER.info(">>> GPU not available, batch size computation skipped.")
 
     def train_model(self, run_description: str) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Vanilla SGD
@@ -132,6 +132,8 @@ class SNNClassifier(TorchVisionDatasetClassifier):
         run_name = " ".join(str(s) for s in self.results_subdirectory.split(" ")[2:])
 
         with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True) as run:
+            self.run_id = run.info.run_id
+
             # Define train and validation DataLoaders
             train_dataloader = DataLoader(dataset=self.train_dataset,
                                           batch_size=self.hyperparams["BATCH_SIZE"],
@@ -146,9 +148,10 @@ class SNNClassifier(TorchVisionDatasetClassifier):
             mlflow.log_params(self.hyperparams)
 
             # Run the training loop
+            self.model.train()
+
             for epoch in range(1, self.hyperparams["NUM_EPOCHS"] + 1):
                 train_loss = 0.0
-                self.model.train()
 
                 for X_batch, y_batch in tqdm(train_dataloader):
                     X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
@@ -240,8 +243,6 @@ class SNNClassifier(TorchVisionDatasetClassifier):
                 valid_precision.reset()
                 valid_recall.reset()
                 valid_f1.reset()
-
-            self.run_id = run.info.run_id
 
         LOGGER.info(self.training_history)
 

@@ -23,7 +23,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
     def preprocess_dataset(self) -> None:
         """ Loads the specified dataset and preprocesses it. The data is converted to channels-first torch.FloatTensor,
         scaled to the [0.0, 1.0] range, resized to the size expected by the EfficientNet pre-trained network, and
-        normalized. The labels are one-hot encoded. If the dataset is grayscale, the channel dimension is squeezed.
+        normalized. The labels are one-hot encoded. If the dataset is grayscale, the channel dimension is squeezed in.
         The preprocessing is only applied when iterating over the dataset with a DataLoader. """
         if not self.preprocessed:
             # Load the dataset and apply the preprocessing transforms
@@ -102,7 +102,7 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
                 self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_model
             else:
-                LOGGER.info(">>> GPU not available, skipping batch size computation...")
+                LOGGER.info(">>> GPU not available, batch size computation skipped.")
 
     def train_model(self, run_description: str) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
@@ -153,6 +153,8 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
         run_name = " ".join(str(s) for s in self.results_subdirectory.split(" ")[2:])
 
         with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True) as run:
+            self.run_id = run.info.run_id
+
             # Define train and validation DataLoaders
             train_dataloader = DataLoader(dataset=self.train_dataset,
                                           batch_size=self.hyperparams["BATCH_SIZE"],
@@ -167,9 +169,10 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
             mlflow.log_params(self.hyperparams)
 
             # Run the training loop
+            self.model.train()
+
             for epoch in range(1, self.hyperparams["NUM_EPOCHS"] + 1):
                 train_loss = 0.0
-                self.model.train()
 
                 for X_batch, y_batch in tqdm(train_dataloader):
                     X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
@@ -261,8 +264,6 @@ class EfficientNetClassifier(TorchVisionDatasetClassifier):
                 valid_precision.reset()
                 valid_recall.reset()
                 valid_f1.reset()
-
-            self.run_id = run.info.run_id
 
         LOGGER.info(self.training_history)
 
