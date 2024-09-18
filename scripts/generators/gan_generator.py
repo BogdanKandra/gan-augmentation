@@ -85,8 +85,8 @@ class GAN_Generator(AbstractGenerator):
 
     def train_model(self, run_description: str) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
-        as the optimizer for both the discriminator and the generator, the loss function to be optimised is the Binary
-        Cross Entropy loss.
+        as the optimizer for both the discriminator and the generator, and the loss function to be optimised is the
+        Binary Cross Entropy loss.
 
         Arguments:
             run_description (str): The description of the current run
@@ -116,6 +116,7 @@ class GAN_Generator(AbstractGenerator):
             # Define the DataLoader
             dataloader = DataLoader(dataset=self.train_dataset,
                                     batch_size=self.hyperparams["BATCH_SIZE"],
+                                    shuffle=True,
                                     **self.dataloader_params)
 
             # Log the hyperparameters to MLflow
@@ -163,9 +164,9 @@ class GAN_Generator(AbstractGenerator):
                 noise = torch.randn((y_batch.shape[0], self.model.z_dim), device=self.device)
                 fake = self.model(noise, y_batch)
                 LOGGER.info("> Real images:")
-                self._display_image_batch(X_batch)
+                self.display_image_batch(X_batch)
                 LOGGER.info("> Fake images:")
-                self._display_image_batch(fake)
+                self.display_image_batch(fake)
 
         LOGGER.info(self.training_history)
 
