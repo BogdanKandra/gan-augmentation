@@ -5,7 +5,7 @@ from scripts import utils
 LOGGER = utils.get_logger(__name__)
 
 
-class TorchVisionDatasetModel(ABC):
+class AbstractModel(ABC):
     """ Abstract class representing the blueprint all classifiers and generators on TorchVision datasets must follow """
     @classmethod
     def __subclasshook__(cls, subclass) -> bool:
