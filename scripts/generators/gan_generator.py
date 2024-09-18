@@ -3,10 +3,11 @@ from typing import Dict, List
 
 import mlflow
 import torch
-import torch.nn.functional as F
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 from torcheval.metrics import FrechetInceptionDistance
+from torchvision.datasets import CIFAR10, FashionMNIST
+from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
 from scripts import config, utils
@@ -20,20 +21,34 @@ class GANGenerator(TorchVisionDatasetGenerator):
     """ Class representing a generator for TorchVision datasets,
     using a vanilla Generative Adversarial Network (GAN) """
     def preprocess_dataset(self) -> None:
-        """ Preprocesses the dataset currently in memory by reshaping it and scaling the values. """
+        """ Loads the specified dataset and preprocesses it by converting to channels-first torch.FloatTensor, and
+        scaling the values to the [0.0, 1.0] range. If the dataset is grayscale, the channel dimension is squeezed in.
+        The preprocessing is only applied when iterating over the dataset with a DataLoader. """
         if not self.preprocessed:
-            if len(self.X.shape) == 3:
-                # If the loaded dataset is grayscale, add the channel dimension
-                self.X = torch.unsqueeze(self.X, dim=1)
-            elif len(self.X.shape) == 4 and self.X.shape[3] == 3:
-                # If the loaded dataset is RGB channels-last, transform to channel-first
-                self.X = self.X.permute(0, 3, 1, 2)
-
-            # Convert to float and scale to [0, 1]
-            self.X = self.X.to(torch.float32) / 255.0
-
-            # One-hot encode the labels
-            self.y = F.one_hot(self.y, num_classes=len(self.class_labels))
+            # Load the dataset and apply the preprocessing transform
+            match self.dataset_type:
+                case config.GeneratorDataset.FASHION_MNIST:
+                    self.train_dataset = FashionMNIST(root="data",
+                                                      train=True,
+                                                      transform=ToTensor(),
+                                                      target_transform=self._one_hot_encode,
+                                                      download=True)
+                    self.test_dataset = FashionMNIST(root="data",
+                                                     train=False,
+                                                     transform=ToTensor(),
+                                                     target_transform=self._one_hot_encode,
+                                                     download=True)
+                case config.GeneratorDataset.CIFAR_10:
+                    self.train_dataset = CIFAR10(root="data",
+                                                 train=True,
+                                                 transform=ToTensor(),
+                                                 target_transform=self._one_hot_encode,
+                                                 download=True)
+                    self.test_dataset = CIFAR10(root="data",
+                                                train=False,
+                                                transform=ToTensor(),
+                                                target_transform=self._one_hot_encode,
+                                                download=True)
 
             self.preprocessed = True
 
@@ -43,40 +58,42 @@ class GANGenerator(TorchVisionDatasetGenerator):
         Arguments:
             compute_batch_size (bool, optional): whether to compute the maximum batch size for this model and device
         """
-        self.model = Generator(self.dataset_type).to(self.device)
-        self.discriminator = Discriminator(self.dataset_type).to(self.device)
+        self.model = Generator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
+        self.discriminator = Discriminator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
         self.hyperparams = copy(config.GAN_GEN_HYPERPARAMS)
 
         if compute_batch_size:
-            if self.device.type == 'cuda':
-                LOGGER.info('>>> Searching for the optimal batch size for this GPU and the Generator...')
-                temp_generator = Generator(self.dataset_type).to(self.device)
-                temp_discriminator = Discriminator(self.dataset_type).to(self.device)
-                optimal_batch_size = utils.get_maximum_generator_batch_size(temp_generator,
-                                                                            temp_discriminator,
-                                                                            self.device,
-                                                                            gen_input_shape=self.model.z_dim,
-                                                                            gen_output_shape=self.X.shape[1:],
-                                                                            disc_input_shape=self.X.shape[1:],
-                                                                            disc_output_shape=1,
-                                                                            dataset_size=self.X.shape[0],
-                                                                            max_batch_size=1024)
-                self.hyperparams['BATCH_SIZE'] = optimal_batch_size
+            if self.device.type == "cuda":
+                LOGGER.info(">>> Searching for the optimal batch size for this GPU and the Generator...")
+                temp_generator = Generator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
+                temp_discriminator = Discriminator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
+                optimal_batch_size = utils.get_maximum_generator_batch_size(
+                                        temp_generator,
+                                        temp_discriminator,
+                                        self.device,
+                                        gen_input_shape=self.model.z_dim,
+                                        gen_output_shape=self.batch_shape[1:],
+                                        disc_input_shape=self.batch_shape[1:],
+                                        disc_output_shape=1,
+                                        dataset_size=self.train_dataset.data.shape[0],
+                                        max_batch_size=1024
+                                        )
+                self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_generator, temp_discriminator
             else:
-                LOGGER.info('>>> GPU not available, batch size computation skipped.')
+                LOGGER.info(">>> GPU not available, batch size computation skipped.")
 
     def train_model(self, run_description: str) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
         as the optimizer for both the discriminator and the generator, the loss function to be optimised is the Binary
-        Cross Entropy loss, and the loss is measured. An early stopping mechanism is used to prevent overfitting.
+        Cross Entropy loss.
 
         Arguments:
             run_description (str): The description of the current run
         """
         # Define the optimizer and loss functions
-        self.disc_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=self.hyperparams['LEARNING_RATE'])
-        self.gen_optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hyperparams['LEARNING_RATE'])
+        self.disc_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=self.hyperparams["LEARNING_RATE"])
+        self.gen_optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hyperparams["LEARNING_RATE"])
         self.loss = nn.BCEWithLogitsLoss()
 
         self._create_current_run_directory()
@@ -86,22 +103,20 @@ class GANGenerator(TorchVisionDatasetGenerator):
             "discriminator_loss": [],
             "generator_loss": []
         }
-        # early_stopping_counter = 0
 
         # Setup and start an MLflow run
-        mlflow.set_tracking_uri(uri='http://127.0.0.1:8080')
+        mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
         experiment_name = f"{self.__class__.__name__} {self.dataset_type.name}"
         mlflow.set_experiment(experiment_name)
-        run_name = ' '.join(str(s) for s in self.results_subdirectory.split(' ')[2:])
+        run_name = " ".join(str(s) for s in self.results_subdirectory.split(" ")[2:])
 
         with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True) as run:
+            self.run_id = run.info.run_id
+
             # Define the DataLoader
-            dataset = TensorDataset(self.X, self.y)
-            dataloader = DataLoader(dataset=dataset,
-                                    batch_size=self.hyperparams['BATCH_SIZE'],
-                                    shuffle=True,
-                                    pin_memory=self.pin_memory,
-                                    pin_memory_device=self.pin_memory_device)
+            dataloader = DataLoader(dataset=self.train_dataset,
+                                    batch_size=self.hyperparams["BATCH_SIZE"],
+                                    **self.dataloader_params)
 
             # Log the hyperparameters to MLflow
             mlflow.log_params(self.hyperparams)
@@ -110,23 +125,23 @@ class GANGenerator(TorchVisionDatasetGenerator):
             self.discriminator.train()
             self.model.train()
 
-            for epoch in range(1, self.hyperparams['NUM_EPOCHS'] + 1):
+            for epoch in range(1, self.hyperparams["NUM_EPOCHS"] + 1):
                 discriminator_loss = 0.0
                 generator_loss = 0.0
 
-                for batch, labels in tqdm(dataloader):
-                    batch = batch.to(self.device)
-                    labels = labels.to(self.device)
+                for X_batch, y_batch in tqdm(dataloader):
+                    X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
+                    y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
 
                     # Update the discriminator
                     self.disc_optimizer.zero_grad()
-                    batch_disc_loss = self._disc_loss(batch, labels)
+                    batch_disc_loss = self._disc_loss(X_batch, y_batch)
                     batch_disc_loss.backward(retain_graph=True)
                     self.disc_optimizer.step()
 
                     # Update the generator
                     self.gen_optimizer.zero_grad()
-                    batch_gen_loss = self._gen_loss(labels)
+                    batch_gen_loss = self._gen_loss(y_batch)
                     batch_gen_loss.backward()
                     self.gen_optimizer.step()
 
@@ -145,35 +160,18 @@ class GANGenerator(TorchVisionDatasetGenerator):
                 LOGGER.info(f"> generator loss: {self.training_history['generator_loss'][-1]}")
 
                 # Plot a batch of real and fake images
-                noise = torch.randn((labels.shape[0], self.model.z_dim), device=self.device)
-                fake = self.model(noise, labels)
+                noise = torch.randn((y_batch.shape[0], self.model.z_dim), device=self.device)
+                fake = self.model(noise, y_batch)
                 LOGGER.info("> Real images:")
-                self._display_image_batch(batch)
+                self._display_image_batch(X_batch)
                 LOGGER.info("> Fake images:")
                 self._display_image_batch(fake)
-
-                # # Early stopping
-                # best_loss = min(self.training_history["generator_loss"])
-                # if self.training_history["generator_loss"][-1] <= best_loss:
-                #     if early_stopping_counter != 0:
-                #         early_stopping_counter = 0
-                #         LOGGER.info(">> Early stopping counter reset.")
-                #     self.best_model_state = self.model.state_dict()
-                # else:
-                #     early_stopping_counter += 1
-                #     LOGGER.info(f">> Early stopping counter increased to {early_stopping_counter}.")
-
-                # if early_stopping_counter == self.hyperparams['EARLY_STOPPING_TOLERANCE']:
-                #     LOGGER.info(">> Training terminated due to early stopping!")
-                #     break
-
-            self.run_id = run.info.run_id
 
         LOGGER.info(self.training_history)
 
     def evaluate_model(self) -> None:
         """ Evaluates the model currently in memory by computing the Frechet Inception Distance between the generator
-        distribution and real images distribution, on a small dataset subset of 10000 samples. """
+        distribution and real images distribution, on a small subdataset of 10000 samples. """
         # Define the FID evaluation metric
         fid = FrechetInceptionDistance(device=self.device)
 
@@ -182,28 +180,26 @@ class GANGenerator(TorchVisionDatasetGenerator):
         }
 
         # Setup and start an MLflow run
-        mlflow.set_tracking_uri(uri='http://127.0.0.1:8080')
+        mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
         experiment_name = f"{self.__class__.__name__} {self.dataset_type.name}"
         mlflow.set_experiment(experiment_name)
 
         with mlflow.start_run(run_id=self.run_id, log_system_metrics=True):
             # Define the DataLoader
-            dataset = TensorDataset(self.X[:10000], self.y[:10000])
-            dataloader = DataLoader(dataset=dataset,
-                                    batch_size=self.hyperparams['BATCH_SIZE'],
-                                    pin_memory=self.pin_memory,
-                                    pin_memory_device=self.pin_memory_device)
+            dataloader = DataLoader(dataset=self.test_dataset,
+                                    batch_size=self.hyperparams["BATCH_SIZE"],
+                                    **self.dataloader_params)
 
             # Gradient computation is not required during evaluation
             with torch.no_grad():
                 self.model.eval()
 
-                for batch, labels in tqdm(dataloader):
-                    real = batch.to(self.device)
-                    labels = labels.to(self.device)
+                for X_batch, y_batch in tqdm(dataloader):
+                    real = X_batch.to(self.device, non_blocking=self.non_blocking)
+                    y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
 
-                    noise = torch.randn((labels.shape[0], self.model.z_dim), device=self.device)
-                    fake = self.model(noise, labels)
+                    noise = torch.randn((y_batch.shape[0], self.model.z_dim), device=self.device)
+                    fake = self.model(noise, y_batch)
 
                     # The Inception-V3 model used for computing FID expects 3-channel images
                     if real.shape[1] == 1:
@@ -255,7 +251,7 @@ class GANGenerator(TorchVisionDatasetGenerator):
         fake = self.model(noise, one_hot_labels)
 
         # Compute the discriminator's predictions of the fake images
-        predictions = self.discriminator(fake, one_hot_labels)
+        predictions = self.discriminator(fake.detach(), one_hot_labels)
 
         # Compute the loss for the fake images
         true_labels = torch.zeros_like(predictions)
@@ -272,3 +268,13 @@ class GANGenerator(TorchVisionDatasetGenerator):
         disc_loss = (loss_fakes + loss_reals) / 2
 
         return disc_loss
+
+    def _one_hot_encode(self, y: int) -> torch.Tensor:
+        """ One-hot encodes the given label.
+
+        Arguments:
+            y (int): the label to be encoded
+        """
+        result = torch.zeros(len(self.class_labels), dtype=torch.float)
+
+        return result.scatter_(dim=0, index=torch.tensor(y), value=1)
