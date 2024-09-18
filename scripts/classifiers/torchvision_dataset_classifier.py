@@ -77,9 +77,14 @@ class TorchVisionDatasetClassifier(TorchVisionDatasetModel, ABC):
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory. """
-        train_dataloader = DataLoader(dataset=self.train_dataset, sampler=self.train_sampler)
-        valid_dataloader = DataLoader(dataset=self.train_dataset, sampler=self.valid_sampler)
-        test_dataloader = DataLoader(dataset=self.test_dataset)
+        train_dataloader = DataLoader(dataset=self.train_dataset,
+                                      sampler=self.train_sampler,
+                                      **self.dataloader_params)
+        valid_dataloader = DataLoader(dataset=self.train_dataset,
+                                      sampler=self.valid_sampler,
+                                      **self.dataloader_params)
+        test_dataloader = DataLoader(dataset=self.test_dataset,
+                                     **self.dataloader_params)
 
         for stage, dataloader in zip(["train", "valid", "test"],
                                      [train_dataloader, valid_dataloader, test_dataloader]):
