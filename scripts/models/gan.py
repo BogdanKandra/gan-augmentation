@@ -46,8 +46,7 @@ class Generator(nn.Module):
             self._generator_block(self.h_dim, self.h_dim * 2),
             self._generator_block(self.h_dim * 2, self.h_dim * 4),
             self._generator_block(self.h_dim * 4, self.h_dim * 8),
-            nn.Linear(self.h_dim * 8, self.out_features),
-            nn.Sigmoid(),
+            self._generator_block(self.h_dim * 8, self.out_features, final_layer=True),
             nn.Unflatten(1, self.out_shape)
         )
 
@@ -62,13 +61,19 @@ class Generator(nn.Module):
 
         return x
 
-    def _generator_block(self, in_features: int, out_features: int) -> None:
+    def _generator_block(self, in_features: int, out_features: int, final_layer: bool = False) -> None:
         """ Builds a block of the generator's model. """
-        return nn.Sequential(
-            nn.Linear(in_features, out_features),
-            nn.BatchNorm1d(out_features),
-            nn.ReLU(),
-        )
+        if not final_layer:
+            return nn.Sequential(
+                nn.Linear(in_features, out_features),
+                nn.BatchNorm1d(out_features),
+                nn.ReLU()
+            )
+        else:
+            return nn.Sequential(
+                nn.Linear(in_features, out_features),
+                nn.Sigmoid()
+            )
 
 
 class Discriminator(nn.Module):
