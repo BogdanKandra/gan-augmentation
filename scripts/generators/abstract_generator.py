@@ -180,14 +180,20 @@ class AbstractGenerator(AbstractModel, ABC):
             self.discriminator.eval()
 
             dummy_noise = torch.randn((1, self.model.z_dim), device=self.device)
-            dummy_labels = torch.randint(low=0, high=10, size=(1,), device=self.device)
-            dummy_labels = F.one_hot(dummy_labels, num_classes=10)
-            dummy_image = self.model(dummy_noise, dummy_labels)
+            dummy_generator_labels = torch.randint(low=0, high=10, size=(1,), device=self.device)
+            dummy_generator_labels = F.one_hot(dummy_generator_labels, num_classes=10)
+            dummy_image = self.model(dummy_noise, dummy_generator_labels)
+
+            if self.__class__.__name__ == "GAN_Generator":
+                dummy_discriminator_labels = dummy_generator_labels
+            elif self.__class__.__name__ == "DCGAN_Generator":
+                channel_labels = dummy_generator_labels[:, :, None, None]
+                dummy_discriminator_labels = channel_labels.repeat(1, 1, self.dataset_shape[1], self.dataset_shape[2])
 
             LOGGER.info(">>> Torchinfo Generator summary:")
             summary(
                 self.model,
-                input_data=[dummy_noise, dummy_labels],
+                input_data=[dummy_noise, dummy_generator_labels],
                 col_names=["input_size", "output_size", "num_params",
                            "params_percent", "kernel_size", "mult_adds", "trainable"],
                 device=self.device,
@@ -197,7 +203,7 @@ class AbstractGenerator(AbstractModel, ABC):
             LOGGER.info(">>> Torchinfo Discriminator summary:")
             summary(
                 self.discriminator,
-                input_data=[dummy_image, dummy_labels],
+                input_data=[dummy_image, dummy_discriminator_labels],
                 col_names=["input_size", "output_size", "num_params",
                            "params_percent", "kernel_size", "mult_adds", "trainable"],
                 device=self.device,
