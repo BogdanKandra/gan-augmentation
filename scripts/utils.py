@@ -193,9 +193,6 @@ def initialize_weights(m: nn.Module) -> None:
     elif isinstance(m, nn.BatchNorm2d):
         nn.init.normal_(m.weight, 0.0, 0.02)
         nn.init.constant_(m.bias, 0)
-    elif isinstance(m, nn.Linear):
-        nn.init.normal_(m.weight, 0, 0.01)
-        nn.init.constant_(m.bias, 0)
 
 
 def plot_classification_results(subdirectory_name: str, history: Dict[str, List[float]]) -> None:
