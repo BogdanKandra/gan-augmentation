@@ -39,7 +39,7 @@ def get_maximum_classifier_batch_size(
     input_shape: Tuple[int, int, int],
     output_shape: Tuple[int],
     dataset_size: int,
-    max_batch_size: int = None,
+    max_batch_size: int = 2048,
     num_iterations: int = 5,
 ) -> int:
     """ Searches for the maximum batch size that can be used for the given classifier, on the given device.
@@ -101,7 +101,7 @@ def get_maximum_generator_batch_size(
     gen_input_shape: int,
     disc_input_shape: Tuple[int, int, int],
     dataset_size: int,
-    max_batch_size: int = None,
+    max_batch_size: int = 2048,
     num_iterations: int = 5,
 ) -> int:
     """ Searches for the maximum batch size that can be used for the given generator, on the given device.
@@ -128,7 +128,7 @@ def get_maximum_generator_batch_size(
     batch_size = 2
 
     while True:
-        if max_batch_size is not None and batch_size >= max_batch_size:
+        if batch_size >= max_batch_size:
             LOGGER.info(f">>> Batch size reached maximum specified value: {max_batch_size}!")
             batch_size = max_batch_size
             break
