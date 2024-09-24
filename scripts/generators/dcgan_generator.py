@@ -11,7 +11,7 @@ from torchvision.datasets import CIFAR10, FashionMNIST
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.config import GeneratorDataset
+from scripts.config import GeneratorDataset, NormalizationRange
 from scripts.generators.abstract_generator import AbstractGenerator
 from scripts.models.dcgan import Generator, Discriminator
 
@@ -33,31 +33,40 @@ class DCGAN_Generator(AbstractGenerator):
                         transforms.ToTensor(),
                         transforms.Normalize(mean=(0.5,), std=(0.5,)),
                     ])
-                    self.train_dataset = FashionMNIST(root="data",
-                                                      train=True,
-                                                      transform=transform,
-                                                      target_transform=self._one_hot_encode,
-                                                      download=True)
-                    self.test_dataset = FashionMNIST(root="data",
-                                                     train=False,
-                                                     transform=transform,
-                                                     target_transform=self._one_hot_encode,
-                                                     download=True)
+                    train_dataset = FashionMNIST(root="data",
+                                                 train=True,
+                                                 transform=transform,
+                                                 target_transform=self._one_hot_encode,
+                                                 download=True)
+                    test_dataset = FashionMNIST(root="data",
+                                                train=False,
+                                                transform=transform,
+                                                target_transform=self._one_hot_encode,
+                                                download=True)
                 case GeneratorDataset.CIFAR_10:
                     transform = transforms.Compose([
                         transforms.ToTensor(),
                         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
                     ])
-                    self.train_dataset = CIFAR10(root="data",
-                                                 train=True,
-                                                 transform=transform,
-                                                 target_transform=self._one_hot_encode,
-                                                 download=True)
-                    self.test_dataset = CIFAR10(root="data",
-                                                train=False,
-                                                transform=transform,
-                                                target_transform=self._one_hot_encode,
-                                                download=True)
+                    train_dataset = CIFAR10(root="data",
+                                            train=True,
+                                            transform=transform,
+                                            target_transform=self._one_hot_encode,
+                                            download=True)
+                    test_dataset = CIFAR10(root="data",
+                                           train=False,
+                                           transform=transform,
+                                           target_transform=self._one_hot_encode,
+                                           download=True)
+
+            # Define the DataLoaders
+            self.train_dataloader = DataLoader(dataset=train_dataset,
+                                               batch_size=self.hyperparams["BATCH_SIZE"],
+                                               shuffle=True,
+                                               **self.dataloader_params)
+            self.test_dataloader = DataLoader(dataset=test_dataset,
+                                              batch_size=self.hyperparams["BATCH_SIZE"],
+                                              **self.dataloader_params)
 
             self.preprocessed = True
 
@@ -88,7 +97,7 @@ class DCGAN_Generator(AbstractGenerator):
                                         gen_output_shape=self.batch_shape[1:],
                                         disc_input_shape=self.batch_shape[1:],
                                         disc_output_shape=1,
-                                        dataset_size=self.train_dataset.data.shape[0],
+                                        dataset_size=len(self.train_dataloader),
                                         max_batch_size=1024
                                         )
                 self.hyperparams["BATCH_SIZE"] = optimal_batch_size
@@ -130,12 +139,6 @@ class DCGAN_Generator(AbstractGenerator):
         with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True) as run:
             self.run_id = run.info.run_id
 
-            # Define the DataLoader
-            dataloader = DataLoader(dataset=self.train_dataset,
-                                    batch_size=self.hyperparams["BATCH_SIZE"],
-                                    shuffle=True,
-                                    **self.dataloader_params)
-
             # Log the hyperparameters to MLflow
             mlflow.log_params(self.hyperparams)
 
@@ -147,7 +150,7 @@ class DCGAN_Generator(AbstractGenerator):
                 discriminator_loss = 0.0
                 generator_loss = 0.0
 
-                for X_batch, y_batch in tqdm(dataloader):
+                for X_batch, y_batch in tqdm(self.train_dataloader):
                     X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
                     y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
 
@@ -203,16 +206,11 @@ class DCGAN_Generator(AbstractGenerator):
         mlflow.set_experiment(experiment_name)
 
         with mlflow.start_run(run_id=self.run_id, log_system_metrics=True):
-            # Define the DataLoader
-            dataloader = DataLoader(dataset=self.test_dataset,
-                                    batch_size=self.hyperparams["BATCH_SIZE"],
-                                    **self.dataloader_params)
-
             # Gradient computation is not required during evaluation
             with torch.no_grad():
                 self.model.eval()
 
-                for X_batch, y_batch in tqdm(dataloader):
+                for X_batch, y_batch in tqdm(self.test_dataloader):
                     real = X_batch.to(self.device, non_blocking=self.non_blocking)
                     y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
 
@@ -223,6 +221,10 @@ class DCGAN_Generator(AbstractGenerator):
                     if real.shape[1] == 1:
                         real = torch.cat([real] * 3, dim=1)
                         fake = torch.cat([fake] * 3, dim=1)
+
+                    # The FID expects images in the range [0, 1]
+                    # real = utils.unnormalize_image(real, NormalizationRange.TANGENT)
+                    # fake = utils.unnormalize_image(fake, NormalizationRange.TANGENT)
 
                     fid.update(real, is_real=True)
                     fid.update(fake, is_real=False)
