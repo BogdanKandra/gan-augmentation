@@ -82,8 +82,8 @@ class AbstractGenerator(AbstractModel, ABC):
             batch = batch.to(self.device, non_blocking=self.non_blocking)
             labels = labels.to(self.device, non_blocking=self.non_blocking)
 
-            X_shape = (len(dataloader), *batch.shape[1:])
-            y_shape = (len(dataloader), *labels.shape[1:])
+            X_shape = (len(dataloader.dataset), *batch.shape[1:])
+            y_shape = (len(dataloader.dataset), *labels.shape[1:])
 
             LOGGER.info(f">>> {stage.capitalize()} Set Information:\n\tshape: X_{stage}.shape={X_shape}, "
                         f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={batch.dtype}, "
@@ -109,7 +109,7 @@ class AbstractGenerator(AbstractModel, ABC):
                 value is considered only if unnormalize is True
         """
         # Parameter validation
-        max_samples = min(len(self.train_dataloader), 100)
+        max_samples = min(len(self.train_dataloader.dataset), 100)
         if num_samples > max_samples:
             LOGGER.info(f"> Maximum number of images to be displayed is {max_samples}")
             num_samples = max_samples
@@ -130,7 +130,7 @@ class AbstractGenerator(AbstractModel, ABC):
             cmap = plt.get_cmap(None)
 
         # Plot random samples
-        indices = [randrange(0, len(self.train_dataloader)) for _ in range(num_samples)]
+        indices = [randrange(0, self.train_dataloader.batch_size) for _ in range(num_samples)]
         indices.extend([-1] * (grid_size ** 2 - num_samples))  # Pad with -1 for empty spaces
 
         _, axes = plt.subplots(grid_size, grid_size, figsize=(8, 8))
@@ -254,7 +254,6 @@ class AbstractGenerator(AbstractModel, ABC):
             f.write("\nHYPERPARAMETERS:\n")
             f.write("------------------------------\n")
             f.write(f"Batch Size: {self.hyperparams['BATCH_SIZE']}\n")
-            f.write(f"Early Stopping Tolerance: {self.hyperparams['EARLY_STOPPING_TOLERANCE']}\n")
             f.write(f"Learning Rate: {self.hyperparams['LEARNING_RATE']}\n")
             f.write(f"Number of Epochs: {self.hyperparams['NUM_EPOCHS']}\n")
 
