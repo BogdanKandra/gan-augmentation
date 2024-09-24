@@ -12,7 +12,7 @@ from torchinfo import summary
 from tqdm import tqdm
 
 from scripts import config, utils
-from scripts.config import ClassifierDataset
+from scripts.config import ClassifierDataset, NormalizationRange
 from scripts.interfaces import AbstractModel
 
 
@@ -41,7 +41,7 @@ class AbstractClassifier(AbstractModel, ABC):
             self.device: torch.device = torch.device(f"cuda:{torch.cuda.current_device()}")
             self.non_blocking = True
             self.dataloader_params: dict = {
-                "num_workers": int(0.9 * cpu_count()),
+                # "num_workers": int(0.9 * cpu_count()),
                 "pin_memory": True,
                 "pin_memory_device": self.device.type
             }
@@ -112,12 +112,19 @@ class AbstractClassifier(AbstractModel, ABC):
         self.batch_shape = batch.shape
         self.labels_shape = labels.shape
 
-    def display_dataset_sample(self, num_samples: int = 9) -> None:
+    def display_dataset_sample(self,
+                               num_samples: int = 9,
+                               unnormalize: bool = False,
+                               normalization_range: NormalizationRange = None) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
-        min(100, train_set_size).
+        min(100, train_set_size). If the image should be unnormalized before being displayed, the normalization range
+        must be provided.
 
         Arguments:
             num_samples (int, optional): the number of images to be displayed
+            unnormalize (bool, optional): whether to unnormalize the images before displaying
+            normalization_range (NormalizationRange, optional): the range of values obtained after normalization; its
+                value is considered only if unnormalize is True
         """
         # Parameter validation
         max_samples = min(len(self.train_sampler), 100)
@@ -148,6 +155,8 @@ class AbstractClassifier(AbstractModel, ABC):
             if i != -1:
                 # Image must be channels-last for matplotlib
                 sample, label = self.train_dataset[i]
+                if unnormalize:
+                    sample = utils.unnormalize_image(sample, normalization_range)
                 sample = sample.permute(1, 2, 0)
                 label = self.class_labels[label]
                 ax.imshow(sample, cmap=cmap)
@@ -252,7 +261,7 @@ class AbstractClassifier(AbstractModel, ABC):
         model_path = classifier_artifacts_path / "model.onnx"
 
         self.model.eval()
-        dummy_input = torch.randn(1, *self.batch_shape, device=self.device)
+        dummy_input = torch.randn(1, *self.batch_shape[1:], device=self.device)
 
         onnx_program = torch.onnx.dynamo_export(self.model, dummy_input)
         onnx_program.save(str(model_path))
