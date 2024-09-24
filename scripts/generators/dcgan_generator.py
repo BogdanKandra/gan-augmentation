@@ -26,6 +26,8 @@ class DCGAN_Generator(AbstractGenerator):
         scaling the values to the [-1.0, 1.0] range. If the dataset is grayscale, the channel dimension is squeezed in.
         The preprocessing is only applied when iterating over the dataset with a DataLoader. """
         if not self.preprocessed:
+            self.hyperparams = copy(config.GAN_GEN_HYPERPARAMS)
+
             # Load the dataset and apply the preprocessing transform
             match self.dataset_type:
                 case GeneratorDataset.FASHION_MNIST:
@@ -89,23 +91,25 @@ class DCGAN_Generator(AbstractGenerator):
                                                              .apply(utils.initialize_weights)
                 temp_discriminator = Discriminator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)\
                                                                      .apply(utils.initialize_weights)
-                optimal_batch_size = utils.get_maximum_generator_batch_size(
-                                        temp_generator,
-                                        temp_discriminator,
-                                        self.device,
-                                        gen_input_shape=self.model.z_dim,
-                                        gen_output_shape=self.batch_shape[1:],
-                                        disc_input_shape=self.batch_shape[1:],
-                                        disc_output_shape=1,
-                                        dataset_size=len(self.train_dataloader),
-                                        max_batch_size=1024
-                                        )
-                self.hyperparams["BATCH_SIZE"] = optimal_batch_size
+                # optimal_batch_size = utils.get_maximum_generator_batch_size(
+                #                         temp_generator,
+                #                         temp_discriminator,
+                #                         self.device,
+                #                         gen_input_shape=self.model.z_dim,
+                #                         disc_input_shape=self.batch_shape[1:],
+                #                         dataset_size=len(self.train_dataloader.dataset),
+                #                         max_batch_size=4096
+                #                         )
+
+                # self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_generator, temp_discriminator
             else:
                 LOGGER.info(">>> GPU not available, batch size computation skipped.")
 
-    def train_model(self, run_description: str) -> None:
+    def train_model(self,
+                    run_description: str,
+                    unnormalize: bool = False,
+                    normalization_range: NormalizationRange = None) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
         as the optimizer for both the discriminator and the generator, and the loss function to be optimised is the
         Binary Cross Entropy loss.
@@ -183,6 +187,11 @@ class DCGAN_Generator(AbstractGenerator):
                 # Plot a batch of real and fake images
                 noise = torch.randn((y_batch.shape[0], self.model.z_dim), device=self.device)
                 fake = self.model(noise, y_batch)
+
+                if unnormalize:
+                    fake = utils.unnormalize_image(fake, normalization_range)
+                    X_batch = utils.unnormalize_image(X_batch, normalization_range)
+
                 LOGGER.info("> Real images:")
                 self.display_image_batch(X_batch)
                 LOGGER.info("> Fake images:")

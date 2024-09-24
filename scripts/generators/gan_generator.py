@@ -26,37 +26,39 @@ class GAN_Generator(AbstractGenerator):
         scaling the values to the [0.0, 1.0] range. If the dataset is grayscale, the channel dimension is squeezed in.
         The preprocessing is only applied when iterating over the dataset with a DataLoader. """
         if not self.preprocessed:
+            self.hyperparams = copy(config.GAN_GEN_HYPERPARAMS)
+
             # Load the dataset and apply the preprocessing transform
             match self.dataset_type:
                 case GeneratorDataset.FASHION_MNIST:
-                    train_dataset = FashionMNIST(root="data",
+                    self.train_dataset = FashionMNIST(root="data",
                                                  train=True,
                                                  transform=ToTensor(),
                                                  target_transform=self._one_hot_encode,
                                                  download=True)
-                    test_dataset = FashionMNIST(root="data",
+                    self.test_dataset = FashionMNIST(root="data",
                                                 train=False,
                                                 transform=ToTensor(),
                                                 target_transform=self._one_hot_encode,
                                                 download=True)
                 case GeneratorDataset.CIFAR_10:
-                    train_dataset = CIFAR10(root="data",
+                    self.train_dataset = CIFAR10(root="data",
                                             train=True,
                                             transform=ToTensor(),
                                             target_transform=self._one_hot_encode,
                                             download=True)
-                    test_dataset = CIFAR10(root="data",
+                    self.test_dataset = CIFAR10(root="data",
                                            train=False,
                                            transform=ToTensor(),
                                            target_transform=self._one_hot_encode,
                                            download=True)
 
             # Define the DataLoaders
-            self.train_dataloader = DataLoader(dataset=train_dataset,
+            self.train_dataloader = DataLoader(dataset=self.train_dataset,
                                                batch_size=self.hyperparams["BATCH_SIZE"],
                                                shuffle=True,
                                                **self.dataloader_params)
-            self.test_dataloader = DataLoader(dataset=test_dataset,
+            self.test_dataloader = DataLoader(dataset=self.test_dataset,
                                               batch_size=self.hyperparams["BATCH_SIZE"],
                                               **self.dataloader_params)
 
@@ -70,7 +72,6 @@ class GAN_Generator(AbstractGenerator):
         """
         self.model = Generator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
         self.discriminator = Discriminator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
-        self.hyperparams = copy(config.GAN_GEN_HYPERPARAMS)
 
         if compute_batch_size:
             if self.device.type == "cuda":
@@ -82,18 +83,19 @@ class GAN_Generator(AbstractGenerator):
                                         temp_discriminator,
                                         self.device,
                                         gen_input_shape=self.model.z_dim,
-                                        gen_output_shape=self.batch_shape[1:],
                                         disc_input_shape=self.batch_shape[1:],
-                                        disc_output_shape=1,
-                                        dataset_size=len(self.train_dataloader),
-                                        max_batch_size=1024
+                                        dataset_size=len(self.train_dataloader.dataset),
+                                        max_batch_size=4096
                                         )
                 self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_generator, temp_discriminator
             else:
                 LOGGER.info(">>> GPU not available, batch size computation skipped.")
 
-    def train_model(self, run_description: str) -> None:
+    def train_model(self,
+                    run_description: str,
+                    unnormalize: bool = False,
+                    normalization_range: NormalizationRange = None) -> None:
         """ Defines the training parameters and runs the training loop for the model currently in memory. Adam is used
         as the optimizer for both the discriminator and the generator, and the loss function to be optimised is the
         Binary Cross Entropy loss.
@@ -167,6 +169,11 @@ class GAN_Generator(AbstractGenerator):
                 # Plot a batch of real and fake images
                 noise = torch.randn((y_batch.shape[0], self.model.z_dim), device=self.device)
                 fake = self.model(noise, y_batch)
+
+                if unnormalize:
+                    fake = utils.unnormalize_image(fake, normalization_range)
+                    X_batch = utils.unnormalize_image(X_batch, normalization_range)
+
                 LOGGER.info("> Real images:")
                 self.display_image_batch(X_batch)
                 LOGGER.info("> Fake images:")
