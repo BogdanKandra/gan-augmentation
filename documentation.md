@@ -1,6 +1,8 @@
 # TODO
 - Implement GANs:
     - Investigate why GPU data transfer is slow:
+        - Test out classifiers and generators to see whether moving the dataloaders helped
+        - Also move out classifier dataloaders into the preprocess_dataset() method
         - Comment out self.non_blocking ??
 
     - Also periodically save a checkpoint while training the GAN?
