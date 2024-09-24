@@ -206,15 +206,15 @@ def unnormalize_image(image: torch.Tensor, normalization_range: NormalizationRan
         case NormalizationRange.TANGENT:
             # The image was normalized to [-1, 1]
             if image.shape[channel_dim] == 1:
-                mean = torch.tensor([0.5]).reshape(input_shape)
-                std = torch.tensor([0.5]).reshape(input_shape)
+                mean = torch.tensor([0.5]).reshape(input_shape).to(image.device)
+                std = torch.tensor([0.5]).reshape(input_shape).to(image.device)
             else:
-                mean = torch.tensor([0.5, 0.5, 0.5]).reshape(input_shape)
-                std = torch.tensor([0.5, 0.5, 0.5]).reshape(input_shape)
+                mean = torch.tensor([0.5, 0.5, 0.5]).reshape(input_shape).to(image.device)
+                std = torch.tensor([0.5, 0.5, 0.5]).reshape(input_shape).to(image.device)
         case NormalizationRange.IMAGENET:
             # The image was normalized with the ImageNet statistics
-            mean = torch.tensor([0.485, 0.456, 0.406]).reshape(input_shape)
-            std = torch.tensor([0.229, 0.224, 0.255]).reshape(input_shape)
+            mean = torch.tensor([0.485, 0.456, 0.406]).reshape(input_shape).to(image.device)
+            std = torch.tensor([0.229, 0.224, 0.255]).reshape(input_shape).to(image.device)
 
     return image * std + mean
 
