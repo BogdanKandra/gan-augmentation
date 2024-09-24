@@ -1,21 +1,18 @@
 # TODO
 - Implement GANs:
-    - GPU problems:
-        - Transfer tensors to GPU only when taking batches from the DataLoader
-            - In torchvision_dataset_generator, create the DataLoader directly, with ToTensor transform
-                - get_maximum_generator_batch_size()
-            - Remove all .to(device) calls
-            - Make sure the batches are transfered to GPU when iterating the DataLoader
+    - Investigate why GPU data transfer is slow:
+        - Comment out self.non_blocking ??
 
     - Also periodically save a checkpoint while training the GAN?
 
-	- DCGAN
     - WGAN+GP
 
 - Add the Optional[type] typing hint to all optional method arguments
 - Add the Union[type|type] typing hint to multiple typed arguments
+- Write separate requirement files for CPU and GPU processing
 - Solve the PyTorch GPU requirement problem in requirements.txt
 - Also plot the percentages out of total data in confusion matrix (right under the number)
+- Consider moving the display_model() method from the abstract class to each child class (if the behaviour is sufficiently different)
 
 - Implement Diffusion Models:
 	- DDPM
@@ -48,17 +45,18 @@
         https://towardsdatascience.com/epoch-vs-iterations-vs-batch-size-4dfb9c7ce9c9
         https://medium.com/mini-distill/effect-of-batch-size-on-training-dynamics-21c14f7a716e
         https://wandb.ai/ayush-thakur/dl-question-bank/reports/What-s-the-Optimal-Batch-Size-to-Train-a-Neural-Network---VmlldzoyMDkyNDU
+        https://arxiv.org/abs/1404.5997
         https://arxiv.org/abs/1609.04836
         https://arxiv.org/abs/1711.00489
-    - Don't divide the loss by the batch size when training ???
     - Also save result artifacts in MLflow instead of the `results` directory
-    - save_results() optimization when the model is evaluated on the test set
-        - performed batched computation?
-    - Solve EfficientNet performance problems
     - Save the best model when early stopping
     - Use the PyTorch profiler: https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html
     - Also implement the CID Index (Creativity, Inheritance, Diversity) metric for generators:
         https://shuyueg.github.io/doc/AIPR2019.pdf
+    - Also implement Multi-scale Structural Similarity Index Measure (MS-SSIM) as generator metric?
+    - Also implement early stopping in GAN training?
+        - Use FID as the early stopping criterion
+        - Use this method - https://arxiv.org/html/2405.20987v1
 
 - Deployment / inference of model ideas:
     - TorchServe: https://pytorch.org/serve/
