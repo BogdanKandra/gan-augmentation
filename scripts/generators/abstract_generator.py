@@ -7,12 +7,11 @@ from random import randrange
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from torchinfo import summary
 from torchvision.utils import make_grid
 
 from scripts import config, utils
-from scripts.config import GeneratorDataset
+from scripts.config import GeneratorDataset, NormalizationRange
 from scripts.interfaces import AbstractModel
 
 
@@ -41,7 +40,7 @@ class AbstractGenerator(AbstractModel, ABC):
             self.device: torch.device = torch.device(f"cuda:{torch.cuda.current_device()}")
             self.non_blocking = True
             self.dataloader_params: dict = {
-                "num_workers": int(0.9 * cpu_count()),
+                # "num_workers": int(0.9 * cpu_count()),
                 "pin_memory": True,
                 "pin_memory_device": self.device.type
             }
@@ -50,8 +49,8 @@ class AbstractGenerator(AbstractModel, ABC):
             self.non_blocking = False
             self.dataloader_params: dict = {}
 
-        self.train_dataset = None
-        self.test_dataset = None
+        self.train_dataloader = None
+        self.test_dataloader = None
         self.batch_shape = None
         self.labels_shape = None
         self.preprocessed = False
@@ -77,22 +76,14 @@ class AbstractGenerator(AbstractModel, ABC):
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory. """
-        train_dataloader = DataLoader(dataset=self.train_dataset, **self.dataloader_params)
-        test_dataloader = DataLoader(dataset=self.test_dataset, **self.dataloader_params)
-
         for stage, dataloader in zip(["train", "test"],
-                                     [train_dataloader, test_dataloader]):
+                                     [self.train_dataloader, self.test_dataloader]):
             batch, labels = next(iter(dataloader))
             batch = batch.to(self.device, non_blocking=self.non_blocking)
             labels = labels.to(self.device, non_blocking=self.non_blocking)
 
-            match stage:
-                case "train":
-                    X_shape = (self.train_dataset.data.shape[0], *batch.shape[1:])
-                    y_shape = (self.train_dataset.data.shape[0], *labels.shape[1:])
-                case "test":
-                    X_shape = (self.test_dataset.data.shape[0], *batch.shape[1:])
-                    y_shape = (self.test_dataset.data.shape[0], *labels.shape[1:])
+            X_shape = (len(dataloader), *batch.shape[1:])
+            y_shape = (len(dataloader), *labels.shape[1:])
 
             LOGGER.info(f">>> {stage.capitalize()} Set Information:\n\tshape: X_{stage}.shape={X_shape}, "
                         f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={batch.dtype}, "
@@ -103,15 +94,22 @@ class AbstractGenerator(AbstractModel, ABC):
         self.batch_shape = batch.shape
         self.labels_shape = labels.shape
 
-    def display_dataset_sample(self, num_samples: int = 9) -> None:
+    def display_dataset_sample(self,
+                               num_samples: int = 9,
+                               unnormalize: bool = False,
+                               normalization_range: NormalizationRange = None) -> None:
         """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
-        min(100, dataset_size).
+        min(100, train_set_size). If the image should be unnormalized before being displayed, the normalization range
+        must be provided.
 
         Arguments:
             num_samples (int, optional): the number of images to be displayed
+            unnormalize (bool, optional): whether to unnormalize the images before displaying
+            normalization_range (NormalizationRange, optional): the range of values obtained after normalization; its
+                value is considered only if unnormalize is True
         """
         # Parameter validation
-        max_samples = min(self.train_dataset.data.shape[0], 100)
+        max_samples = min(len(self.train_dataloader), 100)
         if num_samples > max_samples:
             LOGGER.info(f"> Maximum number of images to be displayed is {max_samples}")
             num_samples = max_samples
@@ -132,14 +130,17 @@ class AbstractGenerator(AbstractModel, ABC):
             cmap = plt.get_cmap(None)
 
         # Plot random samples
-        indices = [randrange(0, self.train_dataset.data.shape[0]) for _ in range(num_samples)]
+        indices = [randrange(0, len(self.train_dataloader)) for _ in range(num_samples)]
         indices.extend([-1] * (grid_size ** 2 - num_samples))  # Pad with -1 for empty spaces
 
         _, axes = plt.subplots(grid_size, grid_size, figsize=(8, 8))
         for ax, i in zip(axes.flat, indices):
             if i != -1:
                 # Image must be channels-last for matplotlib
-                sample, label = self.train_dataset[i]
+                batch, labels = next(iter(self.train_dataloader))
+                sample, label = batch[i], labels[i]
+                if unnormalize:
+                    sample = utils.unnormalize_image(sample, normalization_range)
                 sample = sample.permute(1, 2, 0)
                 label = torch.argmax(label).item()
                 label = self.class_labels[label]
@@ -150,13 +151,20 @@ class AbstractGenerator(AbstractModel, ABC):
 
         plt.show()
 
-    def display_image_batch(self, images: torch.Tensor, num_samples: int = 25) -> None:
-        """ Displays random images from the dataset currently in memory. Maximum number of images to be displayed is
-        min(100, dataset_size).
+    def display_image_batch(self,
+                            images: torch.Tensor,
+                            num_samples: int = 25,
+                            unnormalize: bool = False,
+                            normalization_range: NormalizationRange = None) -> None:
+        """ Displays min(num_samples, images.shape[0]) images from an image batch. If the image should be unnormalized
+        before being displayed, the normalization range must be provided.
 
         Arguments:
             images (torch.Tensor): the images to be displayed
             num_samples (int, optional): the number of images to be displayed
+            unnormalize (bool, optional): whether to unnormalize the images before displaying
+            normalization_range (NormalizationRange, optional): the range of values obtained after normalization; its
+                value is considered only if unnormalize is True
         """
         # Parameter validation
         if num_samples > images.shape[0]:
@@ -164,6 +172,8 @@ class AbstractGenerator(AbstractModel, ABC):
             num_samples = images.shape[0]
 
         images = images.detach().cpu()
+        if unnormalize:
+            images = utils.unnormalize_image(images, normalization_range)
         image_grid = make_grid(images[:num_samples], nrow=5)
         plt.imshow(image_grid.permute(1, 2, 0).squeeze())
         plt.show()
