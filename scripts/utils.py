@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from scripts import config
+from scripts.config import NormalizationRange
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -60,7 +61,7 @@ def get_maximum_classifier_batch_size(
     batch_size = 2
 
     while True:
-        if max_batch_size is not None and batch_size >= max_batch_size:
+        if batch_size >= max_batch_size:
             LOGGER.info(f">>> Batch size reached maximum specified value: {max_batch_size}!")
             batch_size = max_batch_size
             break
@@ -74,6 +75,7 @@ def get_maximum_classifier_batch_size(
             LOGGER.info(f"> Trying batch size {batch_size}...")
 
             for _ in range(num_iterations):
+                # Train the classifier
                 inputs = torch.randn((batch_size, *input_shape), dtype=torch.float32, device=device)
                 targets = torch.randint(low=0, high=10, size=(batch_size, *output_shape), device=device)
                 outputs = model(inputs)
@@ -182,6 +184,39 @@ def get_maximum_generator_batch_size(
     torch.cuda.empty_cache()
 
     return batch_size
+
+
+def unnormalize_image(image: torch.Tensor, normalization_range: NormalizationRange) -> torch.Tensor:
+    """ Unnormalizes an image tensor.
+
+    Arguments:
+        image (torch.Tensor): the image tensor to be unnormalized
+        normalization_range (NormalizationRange): the range of values obtained after normalization
+    """
+    if len(image.shape) == 3:
+        # Image is given as (C, H, W)
+        input_shape = (image.shape[0], 1, 1)
+        channel_dim = 0
+    else:
+        # Image is given as (N, C, H, W)
+        input_shape = (1, image.shape[1], 1, 1)
+        channel_dim = 1
+
+    match normalization_range:
+        case NormalizationRange.TANGENT:
+            # The image was normalized to [-1, 1]
+            if image.shape[channel_dim] == 1:
+                mean = torch.tensor([0.5]).reshape(input_shape)
+                std = torch.tensor([0.5]).reshape(input_shape)
+            else:
+                mean = torch.tensor([0.5, 0.5, 0.5]).reshape(input_shape)
+                std = torch.tensor([0.5, 0.5, 0.5]).reshape(input_shape)
+        case NormalizationRange.IMAGENET:
+            # The image was normalized with the ImageNet statistics
+            mean = torch.tensor([0.485, 0.456, 0.406]).reshape(input_shape)
+            std = torch.tensor([0.229, 0.224, 0.255]).reshape(input_shape)
+
+    return image * std + mean
 
 
 def initialize_weights(m: nn.Module) -> None:
