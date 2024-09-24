@@ -39,6 +39,11 @@ class GeneratorType(Enum):
     DDIM = 5
 
 
+class NormalizationRange(Enum):
+    TANGENT = 1   # [-1, 1]
+    IMAGENET = 2
+
+
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
 
 
