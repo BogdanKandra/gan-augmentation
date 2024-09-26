@@ -49,7 +49,9 @@ class AbstractGenerator(AbstractModel, ABC):
             self.non_blocking = False
             self.dataloader_params: dict = {}
 
+        self.train_dataset = None
         self.train_dataloader = None
+        self.test_dataset = None
         self.test_dataloader = None
         self.batch_shape = None
         self.labels_shape = None
