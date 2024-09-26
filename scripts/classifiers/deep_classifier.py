@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from scripts import config, utils
 from scripts.classifiers import AbstractClassifier
+from scripts.config import ClassifierDataset
 from scripts.models.dnn import DNN
 
 LOGGER = utils.get_logger(__name__)
@@ -25,9 +26,11 @@ class DNN_Classifier(AbstractClassifier):
         scaling the values to the [0.0, 1.0] range. If the dataset is grayscale, the channel dimension is squeezed in.
         The preprocessing is only applied when iterating over the dataset with a DataLoader. """
         if not self.preprocessed:
+            self.hyperparams = copy(config.DEEP_CLF_HYPERPARAMS)
+
             # Load the dataset and apply the preprocessing transform
             match self.dataset_type:
-                case config.ClassifierDataset.FASHION_MNIST:
+                case ClassifierDataset.FASHION_MNIST:
                     self.train_dataset = FashionMNIST(root="data",
                                                       train=True,
                                                       transform=ToTensor(),
@@ -36,7 +39,7 @@ class DNN_Classifier(AbstractClassifier):
                                                      train=False,
                                                      transform=ToTensor(),
                                                      download=True)
-                case config.ClassifierDataset.CIFAR_10:
+                case ClassifierDataset.CIFAR_10:
                     self.train_dataset = CIFAR10(root="data",
                                                  train=True,
                                                  transform=ToTensor(),
@@ -58,6 +61,24 @@ class DNN_Classifier(AbstractClassifier):
             self.train_sampler = SubsetRandomSampler(train_idxs)
             self.valid_sampler = SubsetRandomSampler(valid_idxs)
 
+            # Define train, validation and test DataLoaders
+            self.train_dataloader = DataLoader(dataset=self.train_dataset,
+                                               batch_size=self.hyperparams["BATCH_SIZE"],
+                                               sampler=self.train_sampler,
+                                               **self.dataloader_params)
+            self.valid_dataloader = DataLoader(dataset=self.train_dataset,
+                                               batch_size=self.hyperparams["BATCH_SIZE"],
+                                               sampler=self.valid_sampler,
+                                               **self.dataloader_params)
+            self.test_dataloader = DataLoader(dataset=self.test_dataset,
+                                              batch_size=self.hyperparams["BATCH_SIZE"],
+                                              **self.dataloader_params)
+
+            # Store the shapes of the batch data and labels tensors
+            batch, labels = next(iter(self.train_dataloader))
+            self.batch_shape = batch.shape
+            self.labels_shape = labels.shape
+
             self.preprocessed = True
 
     def build_model(self, compute_batch_size: bool = False) -> None:
@@ -68,7 +89,6 @@ class DNN_Classifier(AbstractClassifier):
             compute_batch_size (bool, optional): whether to compute the maximum batch size for this model and device
         """
         self.model = DNN(self.dataset_type).to(self.device, non_blocking=self.non_blocking)
-        self.hyperparams = copy(config.DEEP_CLF_HYPERPARAMS)
 
         if compute_batch_size:
             if self.device.type == "cuda":
@@ -134,16 +154,6 @@ class DNN_Classifier(AbstractClassifier):
         with mlflow.start_run(run_name=run_name, description=run_description, log_system_metrics=True) as run:
             self.run_id = run.info.run_id
 
-            # Define train and validation DataLoaders
-            train_dataloader = DataLoader(dataset=self.train_dataset,
-                                          batch_size=self.hyperparams["BATCH_SIZE"],
-                                          sampler=self.train_sampler,
-                                          **self.dataloader_params)
-            valid_dataloader = DataLoader(dataset=self.train_dataset,
-                                          batch_size=self.hyperparams["BATCH_SIZE"],
-                                          sampler=self.valid_sampler,
-                                          **self.dataloader_params)
-
             # Log the hyperparameters to MLflow
             mlflow.log_params(self.hyperparams)
 
@@ -153,7 +163,7 @@ class DNN_Classifier(AbstractClassifier):
             for epoch in range(1, self.hyperparams["NUM_EPOCHS"] + 1):
                 train_loss = 0.0
 
-                for X_batch, y_batch in tqdm(train_dataloader):
+                for X_batch, y_batch in tqdm(self.train_dataloader):
                     X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
                     y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
                     self.optimizer.zero_grad()
@@ -187,7 +197,7 @@ class DNN_Classifier(AbstractClassifier):
                     valid_loss = 0.0
                     self.model.eval()
 
-                    for X_batch, y_batch in tqdm(valid_dataloader):
+                    for X_batch, y_batch in tqdm(self.valid_dataloader):
                         X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
                         y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
                         y_pred = self.model(X_batch)
@@ -269,17 +279,12 @@ class DNN_Classifier(AbstractClassifier):
         mlflow.set_experiment(experiment_name)
 
         with mlflow.start_run(run_id=self.run_id, log_system_metrics=True):
-            # Define test DataLoader
-            test_dataloader = DataLoader(dataset=self.test_dataset,
-                                         batch_size=self.hyperparams["BATCH_SIZE"],
-                                         **self.dataloader_params)
-
             # Gradient computation is not required during evaluation
             with torch.no_grad():
                 test_loss = 0.0
                 self.model.eval()
 
-                for X_batch, y_batch in tqdm(test_dataloader):
+                for X_batch, y_batch in tqdm(self.test_dataloader):
                     X_batch = X_batch.to(self.device, non_blocking=self.non_blocking)
                     y_batch = y_batch.to(self.device, non_blocking=self.non_blocking)
                     y_pred = self.model(X_batch)
