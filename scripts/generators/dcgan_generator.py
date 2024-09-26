@@ -35,40 +35,31 @@ class DCGAN_Generator(AbstractGenerator):
                         transforms.ToTensor(),
                         transforms.Normalize(mean=(0.5,), std=(0.5,)),
                     ])
-                    train_dataset = FashionMNIST(root="data",
-                                                 train=True,
-                                                 transform=transform,
-                                                 target_transform=self._one_hot_encode,
-                                                 download=True)
-                    test_dataset = FashionMNIST(root="data",
-                                                train=False,
-                                                transform=transform,
-                                                target_transform=self._one_hot_encode,
-                                                download=True)
+                    self.train_dataset = FashionMNIST(root="data",
+                                                      train=True,
+                                                      transform=transform,
+                                                      target_transform=self._one_hot_encode,
+                                                      download=True)
+                    self.test_dataset = FashionMNIST(root="data",
+                                                     train=False,
+                                                     transform=transform,
+                                                     target_transform=self._one_hot_encode,
+                                                     download=True)
                 case GeneratorDataset.CIFAR_10:
                     transform = transforms.Compose([
                         transforms.ToTensor(),
                         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
                     ])
-                    train_dataset = CIFAR10(root="data",
-                                            train=True,
-                                            transform=transform,
-                                            target_transform=self._one_hot_encode,
-                                            download=True)
-                    test_dataset = CIFAR10(root="data",
-                                           train=False,
-                                           transform=transform,
-                                           target_transform=self._one_hot_encode,
-                                           download=True)
-
-            # Define the DataLoaders
-            self.train_dataloader = DataLoader(dataset=train_dataset,
-                                               batch_size=self.hyperparams["BATCH_SIZE"],
-                                               shuffle=True,
-                                               **self.dataloader_params)
-            self.test_dataloader = DataLoader(dataset=test_dataset,
-                                              batch_size=self.hyperparams["BATCH_SIZE"],
-                                              **self.dataloader_params)
+                    self.train_dataset = CIFAR10(root="data",
+                                                 train=True,
+                                                 transform=transform,
+                                                 target_transform=self._one_hot_encode,
+                                                 download=True)
+                    self.test_dataset = CIFAR10(root="data",
+                                                train=False,
+                                                transform=transform,
+                                                target_transform=self._one_hot_encode,
+                                                download=True)
 
             self.preprocessed = True
 
@@ -91,20 +82,29 @@ class DCGAN_Generator(AbstractGenerator):
                                                              .apply(utils.initialize_weights)
                 temp_discriminator = Discriminator(self.dataset_type).to(self.device, non_blocking=self.non_blocking)\
                                                                      .apply(utils.initialize_weights)
-                # optimal_batch_size = utils.get_maximum_generator_batch_size(
-                #                         temp_generator,
-                #                         temp_discriminator,
-                #                         self.device,
-                #                         gen_input_shape=self.model.z_dim,
-                #                         disc_input_shape=self.batch_shape[1:],
-                #                         dataset_size=len(self.train_dataloader.dataset),
-                #                         max_batch_size=4096
-                #                         )
+                optimal_batch_size = utils.get_maximum_generator_batch_size(
+                                        temp_generator,
+                                        temp_discriminator,
+                                        self.device,
+                                        gen_input_shape=self.model.z_dim,
+                                        disc_input_shape=self.batch_shape[1:],
+                                        dataset_size=len(self.train_dataloader.dataset),
+                                        max_batch_size=4096
+                                    )
 
-                # self.hyperparams["BATCH_SIZE"] = optimal_batch_size
+                self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_generator, temp_discriminator
             else:
                 LOGGER.info(">>> GPU not available, batch size computation skipped.")
+
+        # Define train and test DataLoaders
+        self.train_dataloader = DataLoader(dataset=self.train_dataset,
+                                           batch_size=self.hyperparams["BATCH_SIZE"],
+                                           shuffle=True,
+                                           **self.dataloader_params)
+        self.test_dataloader = DataLoader(dataset=self.test_dataset,
+                                          batch_size=self.hyperparams["BATCH_SIZE"],
+                                          **self.dataloader_params)
 
     def train_model(self,
                     run_description: str,

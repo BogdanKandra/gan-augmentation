@@ -32,35 +32,26 @@ class GAN_Generator(AbstractGenerator):
             match self.dataset_type:
                 case GeneratorDataset.FASHION_MNIST:
                     self.train_dataset = FashionMNIST(root="data",
+                                                      train=True,
+                                                      transform=ToTensor(),
+                                                      target_transform=self._one_hot_encode,
+                                                      download=True)
+                    self.test_dataset = FashionMNIST(root="data",
+                                                     train=False,
+                                                     transform=ToTensor(),
+                                                     target_transform=self._one_hot_encode,
+                                                     download=True)
+                case GeneratorDataset.CIFAR_10:
+                    self.train_dataset = CIFAR10(root="data",
                                                  train=True,
                                                  transform=ToTensor(),
                                                  target_transform=self._one_hot_encode,
                                                  download=True)
-                    self.test_dataset = FashionMNIST(root="data",
+                    self.test_dataset = CIFAR10(root="data",
                                                 train=False,
                                                 transform=ToTensor(),
                                                 target_transform=self._one_hot_encode,
                                                 download=True)
-                case GeneratorDataset.CIFAR_10:
-                    self.train_dataset = CIFAR10(root="data",
-                                            train=True,
-                                            transform=ToTensor(),
-                                            target_transform=self._one_hot_encode,
-                                            download=True)
-                    self.test_dataset = CIFAR10(root="data",
-                                           train=False,
-                                           transform=ToTensor(),
-                                           target_transform=self._one_hot_encode,
-                                           download=True)
-
-            # Define the DataLoaders
-            self.train_dataloader = DataLoader(dataset=self.train_dataset,
-                                               batch_size=self.hyperparams["BATCH_SIZE"],
-                                               shuffle=True,
-                                               **self.dataloader_params)
-            self.test_dataloader = DataLoader(dataset=self.test_dataset,
-                                              batch_size=self.hyperparams["BATCH_SIZE"],
-                                              **self.dataloader_params)
 
             self.preprocessed = True
 
@@ -86,11 +77,21 @@ class GAN_Generator(AbstractGenerator):
                                         disc_input_shape=self.batch_shape[1:],
                                         dataset_size=len(self.train_dataloader.dataset),
                                         max_batch_size=4096
-                                        )
+                                    )
+
                 self.hyperparams["BATCH_SIZE"] = optimal_batch_size
                 del temp_generator, temp_discriminator
             else:
                 LOGGER.info(">>> GPU not available, batch size computation skipped.")
+
+        # Define train and test DataLoaders
+        self.train_dataloader = DataLoader(dataset=self.train_dataset,
+                                           batch_size=self.hyperparams["BATCH_SIZE"],
+                                           shuffle=True,
+                                           **self.dataloader_params)
+        self.test_dataloader = DataLoader(dataset=self.test_dataset,
+                                          batch_size=self.hyperparams["BATCH_SIZE"],
+                                          **self.dataloader_params)
 
     def train_model(self,
                     run_description: str,
