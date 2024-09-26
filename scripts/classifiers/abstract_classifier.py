@@ -51,9 +51,12 @@ class AbstractClassifier(AbstractModel, ABC):
             self.dataloader_params: dict = {}
 
         self.train_dataset = None
-        self.test_dataset = None
         self.train_sampler = None
+        self.train_dataloader = None
         self.valid_sampler = None
+        self.valid_dataloader = None
+        self.test_dataset = None
+        self.test_dataloader = None
         self.batch_shape = None
         self.labels_shape = None
         self.preprocessed = False
@@ -77,17 +80,8 @@ class AbstractClassifier(AbstractModel, ABC):
 
     def display_dataset_information(self) -> None:
         """ Logs information about the dataset currently in memory. """
-        train_dataloader = DataLoader(dataset=self.train_dataset,
-                                      sampler=self.train_sampler,
-                                      **self.dataloader_params)
-        valid_dataloader = DataLoader(dataset=self.train_dataset,
-                                      sampler=self.valid_sampler,
-                                      **self.dataloader_params)
-        test_dataloader = DataLoader(dataset=self.test_dataset,
-                                     **self.dataloader_params)
-
         for stage, dataloader in zip(["train", "valid", "test"],
-                                     [train_dataloader, valid_dataloader, test_dataloader]):
+                                     [self.train_dataloader, self.valid_dataloader, self.test_dataloader]):
             batch, labels = next(iter(dataloader))
             batch = batch.to(self.device, non_blocking=self.non_blocking)
             labels = labels.to(self.device, non_blocking=self.non_blocking)
@@ -100,17 +94,14 @@ class AbstractClassifier(AbstractModel, ABC):
                     X_shape = (len(self.valid_sampler), *batch.shape[1:])
                     y_shape = (len(self.valid_sampler), *labels.shape[1:])
                 case "test":
-                    X_shape = (self.test_dataset.data.shape[0], *batch.shape[1:])
-                    y_shape = (self.test_dataset.data.shape[0], *labels.shape[1:])
+                    X_shape = (len(self.test_dataloader.dataset), *batch.shape[1:])
+                    y_shape = (len(self.test_dataloader.dataset), *labels.shape[1:])
 
             LOGGER.info(f">>> {stage.capitalize()} Set Information:\n\tshape: X_{stage}.shape={X_shape}, "
                         f"y_{stage}.shape={y_shape}\n\tdtype: X_{stage}.dtype={batch.dtype}, "
                         f"y_{stage}.dtype={labels.dtype}\n\tdevice: X_{stage}.device={batch.device}, "
                         f"y_{stage}.device={labels.device}\n\tpinned: X_{stage} is_pinned(): {batch.is_pinned()}, "
                         f"y_{stage} is_pinned(): {labels.is_pinned()}")
-
-        self.batch_shape = batch.shape
-        self.labels_shape = labels.shape
 
     def display_dataset_sample(self,
                                num_samples: int = 9,
@@ -129,7 +120,8 @@ class AbstractClassifier(AbstractModel, ABC):
         # Parameter validation
         max_samples = min(len(self.train_sampler), 100)
         if num_samples > max_samples:
-            raise ValueError(f"Maximum count of images to be displayed is {max_samples}")
+            LOGGER.info(f"> Maximum number of images to be displayed is {max_samples}")
+            num_samples = max_samples
 
         # Compute the plotting grid size as the next perfect square from num_samples
         if utils.is_perfect_square(num_samples):
@@ -141,7 +133,7 @@ class AbstractClassifier(AbstractModel, ABC):
             grid_size = int(sqrt(next_perfect_square))
 
         # Compute the cmap used for displaying the images
-        if self.batch_shape[1] == 1:
+        if self.dataset_shape[0] == 1:
             cmap = plt.get_cmap("gray")
         else:
             cmap = plt.get_cmap(None)
