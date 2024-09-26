@@ -61,11 +61,6 @@ def get_maximum_classifier_batch_size(
     batch_size = 2
 
     while True:
-        if batch_size >= max_batch_size:
-            LOGGER.info(f">>> Batch size reached maximum specified value: {max_batch_size}!")
-            batch_size = max_batch_size
-            break
-
         if batch_size >= dataset_size:
             LOGGER.info(f">>> Batch size exceeded dataset size: {dataset_size}!")
             batch_size //= 2
@@ -84,15 +79,21 @@ def get_maximum_classifier_batch_size(
                 optimizer.step()
                 optimizer.zero_grad()
 
-            batch_size *= 2
+            if batch_size >= max_batch_size:
+                LOGGER.info(f">>> Batch size reached maximum specified value: {max_batch_size}!")
+                batch_size = max_batch_size
+                break
+            else:
+                batch_size *= 2
         except RuntimeError:
             LOGGER.info(f">>> Batch size {batch_size} led to OOM error!")
             batch_size //= 2
             break
 
-    LOGGER.info(f">>> Optimal batch size is set to {batch_size}.")
+    LOGGER.info(">>> Emptying CUDA cache...")
     torch.cuda.empty_cache()
 
+    LOGGER.info(f">>> Optimal batch size is set to {batch_size}.")
     return batch_size
 
 
@@ -214,7 +215,7 @@ def unnormalize_image(image: torch.Tensor, normalization_range: NormalizationRan
         case NormalizationRange.IMAGENET:
             # The image was normalized with the ImageNet statistics
             mean = torch.tensor([0.485, 0.456, 0.406]).reshape(input_shape).to(image.device)
-            std = torch.tensor([0.229, 0.224, 0.255]).reshape(input_shape).to(image.device)
+            std = torch.tensor([0.229, 0.224, 0.225]).reshape(input_shape).to(image.device)
 
     return image * std + mean
 
