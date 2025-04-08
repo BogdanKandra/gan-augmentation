@@ -1,75 +1,66 @@
 # TODO
-- Implement GANs:
-    - Investigate why GPU data transfer is slow:
-        - Test out classifiers and generators to see whether moving the dataloaders helped
-        - Also move out classifier dataloaders into the preprocess_dataset() method
-        - Comment out self.non_blocking ??
+### Write Jupyter Notebooks:
+- Notebook for running inference with a chosen generator model
+- Notebook for running inference with a chosen classifier model
 
-    - Also periodically save a checkpoint while training the GAN?
+### Implement GANs:
+- WGAN+GP
 
-    - WGAN+GP
+### Implement Diffusion Models:
+- DDPM
+- DDIM
+- Implement both DMs as conditional DMs
+- Loss functions?
+- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
 
+### Project Milestones:
+- Augment datasets using generator models
+	- How exactly ??
+- Train the 4 classifiers on augmented datasets
+- Analyze results
+
+### Miscellaneous:
 - Add the Optional[type] typing hint to all optional method arguments
 - Add the Union[type|type] typing hint to multiple typed arguments
 - Write separate requirement files for CPU and GPU processing
 - Solve the PyTorch GPU requirement problem in requirements.txt
 - Also plot the percentages out of total data in confusion matrix (right under the number)
 - Consider moving the display_model() method from the abstract class to each child class (if the behaviour is sufficiently different)
-
-- Implement Diffusion Models:
-	- DDPM
-	- DDIM
-	- Implement both DMs as conditional DMs
-	- Loss functions?
-	- Use the Frechet Inception Distance (FID) and Inception Score (IS) eval metrics
-
-- Augment datasets using generator models
-	- How exactly ??
-
-- Train the 4 classifiers on augmented datasets
-
-- Analyze results
-
-- Write Jupyter Notebooks:
-	- 1 x Notebook (train_generator.ipynb) for training and evaluating generator models
-		- User chooses generator type (VanillaGAN / DCGAN / DDPM / DDIM)
-		- User chooses dataset (FashionMNIST / CIFAR-10)
-	- 1 x Notebook for running inference with a chosen generator model
-	- 1 x Notebook for running inference with a chosen classifier model
-	- 1 x Notebook for testing GPU availability
-
-
-- TODO MISC:
-    - Study performance in deep learning:
-        https://docs.nvidia.com/deeplearning/performance/index.html
-    - Study the effects of weight decay in optimizers (and how to apply it to our models)
-    - Study the effects of batch size on training:
-        https://towardsdatascience.com/epoch-vs-iterations-vs-batch-size-4dfb9c7ce9c9
-        https://medium.com/mini-distill/effect-of-batch-size-on-training-dynamics-21c14f7a716e
-        https://wandb.ai/ayush-thakur/dl-question-bank/reports/What-s-the-Optimal-Batch-Size-to-Train-a-Neural-Network---VmlldzoyMDkyNDU
-        https://arxiv.org/abs/1404.5997
-        https://arxiv.org/abs/1609.04836
-        https://arxiv.org/abs/1711.00489
-    - Also save result artifacts in MLflow instead of the `results` directory
-    - Save the best model when early stopping
-    - Use the PyTorch profiler: https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html
-    - Also implement the CID Index (Creativity, Inheritance, Diversity) metric for generators:
-        https://shuyueg.github.io/doc/AIPR2019.pdf
-    - Also implement Multi-scale Structural Similarity Index Measure (MS-SSIM) as generator metric?
-    - Also implement early stopping in GAN training?
-        - Use FID as the early stopping criterion
-        - Use this method - https://arxiv.org/html/2405.20987v1
-
-- Deployment / inference of model ideas:
-    - TorchServe: https://pytorch.org/serve/
-    - Run inference with ONNX Runtime (Check third ONNX reference)
-    - torch.compile and torch.jit.script: https://discuss.pytorch.org/t/efficient-way-to-train-on-gpu-and-inference-on-cpu/185040
-- Update README file with details on how to train, perform inference and other functionalities
+- Investigate why GPU data transfer is slow:
+    - Comment out self.non_blocking ??
+- Also periodically save a checkpoint while training the GAN?
+- Write tests for the classifier scripts ???
+- Also save result artifacts in MLflow instead of the `results` directory
+- Save the best model when early stopping
+- Use the PyTorch profiler: https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html
+- Also implement the CID Index (Creativity, Inheritance, Diversity) metric for generators:
+    https://shuyueg.github.io/doc/AIPR2019.pdf
+- Also implement Multi-scale Structural Similarity Index Measure (MS-SSIM) as generator metric?
+- Also implement early stopping in GAN training?
+    - Use FID as the early stopping criterion
+    - Use this method - https://arxiv.org/html/2405.20987v1
 - Integrate TensorBoard ???
 - Add L2 regularization to the CNN classifier?    # l2 = regularizers.l2(config.L2_LOSS_LAMBDA_2)
 - Maybe create a class structure for representing the training data ?
 - Implement quantization? - https://huggingface.co/docs/transformers/quantization/overview
-- Write tests for the classifier scripts ???
+
+### TO STUDY:
+- Study performance in deep learning:
+    https://docs.nvidia.com/deeplearning/performance/index.html
+- Study the effects of weight decay in optimizers (and how to apply it to our models)
+- Study the effects of batch size on training:
+    https://towardsdatascience.com/epoch-vs-iterations-vs-batch-size-4dfb9c7ce9c9
+    https://medium.com/mini-distill/effect-of-batch-size-on-training-dynamics-21c14f7a716e
+    https://wandb.ai/ayush-thakur/dl-question-bank/reports/What-s-the-Optimal-Batch-Size-to-Train-a-Neural-Network---VmlldzoyMDkyNDU
+    https://arxiv.org/abs/1404.5997
+    https://arxiv.org/abs/1609.04836
+    https://arxiv.org/abs/1711.00489
+
+### Deployment / inference of model ideas:
+- TorchServe: https://pytorch.org/serve/
+- Run inference with ONNX Runtime (Check third ONNX reference)
+- torch.compile and torch.jit.script: https://discuss.pytorch.org/t/efficient-way-to-train-on-gpu-and-inference-on-cpu/185040
+- Update README file with details on how to train, perform inference and other functionalities
 
 <br>
 
