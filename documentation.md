@@ -1,4 +1,88 @@
 # TODO
+### Cursor Output:
+#### WGAN+GP:
+I've successfully implemented the WGAN-GP architecture for your project. Here's what I did:
+1. Created a new model file scripts/models/wgan_gp.py with:
+    - A Generator class similar to DCGAN but optimized for WGAN-GP
+    - A Critic class (not Discriminator) that outputs a scalar score without sigmoid activation
+2. Implemented the WGAN_GP_Generator class in scripts/generators/wgan_gp_generator.py with:
+    - Dataset preprocessing with normalization to [-1, 1] range
+    - Model building with proper weight initialization
+    - Training loop with gradient penalty implementation
+    - Evaluation using FID metric
+3. Updated the hyperparameters in config.py with WGAN-GP specific values:
+    - Smaller batch size (64) to accommodate gradient penalty calculation
+    - Multiple critic iterations per generator update (5)
+    - Gradient penalty coefficient (lambda = 10.0)
+    - Lower learning rate (0.00005) for stability
+The key differentiating features of this implementation compared to standard GANs are:
+    - Using a critic instead of a discriminator that outputs unbounded scores
+    - No sigmoid in the final layer of the critic
+    - RMSprop optimizer instead of Adam
+    - Wasserstein loss: critic_real - critic_fake
+    - Gradient penalty to enforce 1-Lipschitz constraint
+    - Multiple critic updates per generator update
+
+#### DDPM:
+I've successfully implemented the Denoising Diffusion Probabilistic Model (DDPM) architecture for your project. Here's a summary of what was created:
+1. Model Architecture (scripts/models/ddpm.py):
+    - A U-Net model with skip connections that predicts noise at each step
+    - Self-attention layers to capture long-range dependencies
+    - Time embeddings using sinusoidal position encoding
+    - Class conditioning through embeddings
+    - Complete diffusion process with forward noising and reverse denoising
+2. Generator Class (scripts/generators/ddpm_generator.py):
+    - Follows the same interface as other generators in your project
+    - Data preprocessing with normalization to [-1, 1] range
+    - Training loop with Adam optimizer and learning rate scheduling
+    - Gradient clipping to prevent instability
+    - Periodic sample generation during training
+    - Evaluation using Frechet Inception Distance (FID)
+3. Configuration (updated scripts/config.py):
+    - Added DDPM-specific hyperparameters:
+        - Noise schedule parameters (beta_start, beta_end)
+        - Architecture parameters (hidden_channels, time_emb_dim)
+        - Training parameters (batch_size, learning_rate, etc.)
+The key differences between DDPM and previous GAN architectures:
+1. Training Process:
+    - DDPMs train a single network to predict noise, unlike GANs with adversarial training
+    - They use a fixed noise schedule to gradually add/remove noise
+    - Loss is simply MSE between predicted and actual noise
+2. Generation Process:
+    - Starts from pure noise and iteratively denoises
+    - More stable than GANs but slower during inference (requires multiple steps)
+3. Architecture:
+    - Uses a U-Net with skip connections rather than separate generator/discriminator
+    - Requires time step conditioning
+
+#### DDIM:
+I've successfully implemented the Denoising Diffusion Implicit Model (DDIM) architecture for your project. Here's a summary of the implementation:
+1. DDIM Model (scripts/models/ddim.py):
+    - Extended the DDPM architecture with a more efficient sampling process
+    - Implemented non-Markovian deterministic sampling that requires fewer steps
+    - Added configurable stochasticity parameter (eta) for controlling sampling behavior
+    - Maintained the same training process but with accelerated generation
+2. Generator Class (scripts/generators/ddim_generator.py):
+    - Created a DDIM generator that follows the project structure
+    - Reused the same U-Net architecture from DDPM for noise prediction
+    - Implemented the specialized sampling process during generation
+    - Maintained the same training and evaluation methodology
+3. Configuration (updated scripts/config.py):
+    - Added DDIM-specific hyperparameters:
+        - SAMPLING_ETA: Controls stochasticity (0.0 for deterministic sampling)
+        - SAMPLING_STEPS: Reduced number of steps for faster generation (50 vs 1000)
+        - Same training parameters as DDPM
+Key differences between DDIM and DDPM:
+1. Sampling Efficiency:
+    - DDIM can generate high-quality samples with far fewer steps (50 vs 1000)
+    - DDIM uses a non-Markovian process that allows skipping intermediate steps
+2. Controllable Generation:
+    - DDIM allows for deterministic sampling (η=0) or varying levels of stochasticity
+    - The deterministic nature enables interpolation between latent spaces
+3. Same Training Process:
+    - Despite different sampling, DDIM uses the same training approach as DDPM
+    - The same U-Net architecture is used for noise prediction
+
 ### Write Jupyter Notebooks:
 - Notebook for running inference with a chosen generator model
 - Notebook for running inference with a chosen classifier model

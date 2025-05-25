@@ -41,7 +41,7 @@ class GeneratorType(Enum):
 
 class NormalizationRange(Enum):
     TANGENT = 1   # [-1, 1]
-    IMAGENET = 2
+    IMAGENET = 2  # [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
 
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
@@ -77,7 +77,7 @@ SHALLOW_CLF_HYPERPARAMS = {
     "BATCH_SIZE": 16,
     "EARLY_STOPPING_TOLERANCE": 5,
     "LEARNING_RATE": 0.01,
-    "NUM_EPOCHS": 20
+    "NUM_EPOCHS": 3
 }
 
 DEEP_CLF_HYPERPARAMS = {
@@ -116,21 +116,43 @@ DCGAN_GEN_HYPERPARAMS = {
 }
 
 WGAN_GP_GEN_HYPERPARAMS = {
-    "BATCH_SIZE": None,
-    "LEARNING_RATE": None,
-    "NUM_EPOCHS": None
+    "BATCH_SIZE": 64,
+    "CRITIC_ITERATIONS": 5,
+    "LAMBDA_GP": 10.0,
+    "LEARNING_RATE": 0.00005,
+    "NUM_EPOCHS": 200
 }
 
 DDPM_GEN_HYPERPARAMS = {
-    "BATCH_SIZE": None,
-    "LEARNING_RATE": None,
-    "NUM_EPOCHS": None
+    "BATCH_SIZE": 64,
+    "BETA_1": 0.9,
+    "BETA_2": 0.999,
+    "BETA_START": 0.0001,
+    "BETA_END": 0.02,
+    "DROPOUT": 0.1,
+    "HIDDEN_CHANNELS": 64,
+    "LEARNING_RATE": 0.0002,
+    "NUM_EPOCHS": 100,
+    "SAMPLE_INTERVAL": 10,
+    "TIME_EMB_DIM": 256,
+    "TIMESTEPS": 1000
 }
 
 DDIM_GEN_HYPERPARAMS = {
-    "BATCH_SIZE": None,
-    "LEARNING_RATE": None,
-    "NUM_EPOCHS": None
+    "BATCH_SIZE": 64,
+    "BETA_1": 0.9,
+    "BETA_2": 0.999,
+    "BETA_START": 0.0001,
+    "BETA_END": 0.02,
+    "DROPOUT": 0.1,
+    "HIDDEN_CHANNELS": 64,
+    "LEARNING_RATE": 0.0002,
+    "NUM_EPOCHS": 100,
+    "SAMPLE_INTERVAL": 10,
+    "SAMPLING_ETA": 0.0,  # 0 for deterministic sampling, >0 for stochastic
+    "SAMPLING_STEPS": 50, # Fewer steps than DDPM for faster generation
+    "TIME_EMB_DIM": 256,
+    "TIMESTEPS": 1000     # Training still uses 1000 steps
 }
 
 L2_LOSS_LAMBDA_2 = 0.0002
